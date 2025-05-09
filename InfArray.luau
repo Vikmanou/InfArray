@@ -1,60 +1,65 @@
 --[[
 
-	InfTable.lua
+	InfArray.lua
 	Syveric
 
-	A module used to store table larger than Roblox Luau's (or C's) table limit
 
-	Example:
+	Bypass Luau's internal table size limitation of 2^26 (approximately 67 million elements).
+	
+	InfArray achieves this by chunking data into smaller segments.
+	
+	Useful for handling massive datasets that demand storage exceeding the built-in constraints of Luau.
 
-		local tableName = InfTable.new('index')
 
-		-- populate the table
-		local i, limit = 0, 30
+	Usage Example:
+
+		local InfArr = require(game.ReplicatedStorage.Utility.InfTable:Clone())
+
+
+		local t = InfArr.new(10)
+
+		local limit = 30
+
+		print(t:GetTotalLen())
+		print(t:GetValueAtIndex(5))
+
+		local i = 0
 		while i < limit do
 			i += 1
-			t:Add({i, i*2})
+			t:InsertBack(i)
 		end
 
-		t:Iterate(function(index: number, value: any, chunk: { any }): boolean
-			if value == 4 then
-				print('a', index)
-				return true
-			end
+		t:Iterate(function(index: number, value: any)
+			print(index, value)
 		end)
 
+		print(t:Find(8))
+		print(t:GetTotalLen())
 		print(t:GetValueAtIndex(5))
-		t:RemoveIndex(5)
+		t:Replace(5, 'replace thing')
 		print(t:GetValueAtIndex(5))
-
-	--
-
-
-
 ]]
 
-local LIMIT = bit32.lshift(1, 26) -- Luau source code (ltable.cpp): #define MAXBITS 26 #define MAXSIZE (1 << MAXBITS)
+--[[
+	Reference:
+	Luau source (ltable.cpp):
+	https://github.com/luau-lang/luau/blob/master/VM/src/ltable.cpp
 
+	
+	Lines 36–38:
+		// max size of both array and hash part is 2^MAXBITS
+		#define MAXBITS 26
+		#define MAXSIZE (1 << MAXBITS)
+]]
+local LIMIT = bit32.lshift(1, 26)
 
-export type InfTableObject = {
-	_type: string?,
-	_chunks: { { any } },
+type InfArray = typeof(setmetatable({} :: any, {} :: any))
 
-	GetChunk: (number) -> { any }?,
-	SetChunk: (number, { any? }) -> (),
-	GetTotalElementLen: () -> (),
-	Iterate: ((number, any, { any }) -> any) -> (any?),
-	Find: (any) -> (number?, number, number?),
-	GetValueAtIndex: (number) -> (any?, number?, number?),
-	Add: (any, any?) -> (),
-	Replace: (number, any) -> ()
-}
-
-
-local InfArray = {} do
+local InfArray = {LIMIT = LIMIT} do
 	InfArray.__index = InfArray
 
-	function InfArray.new(size: number?, value: any?)
+
+	function InfArray.new(size: number?, value: any?): InfArray
 		local self = setmetatable({}, InfArray)
 
 		self._chunks = {}
@@ -70,29 +75,30 @@ local InfArray = {} do
 		return self
 	end
 
-	function InfArray:GetChunk(index: number): { any }?
+
+	function InfArray:GetChunk(index: number): { any? }?
 		return self._chunks[index]
 	end
+	
 
 	function InfArray:SetChunk(chunk: number, value: { any? })
 		local oldChunkCount = self._chunks[chunk] and #self._chunks[chunk] or 0
 		self._count += #value - oldChunkCount
 		self._chunks[chunk] = value
 	end
+	
 
-	function InfArray:GetTotalLen(): number
-		return self._count
-	end
-
-	function InfArray:Iterate(callback: (index: number, value: any) -> nil)
+	@native function InfArray:Iterate(callback: (index: number, value: any) -> ())
 		for i = 1, #self._chunks do
 			local chunk = self._chunks[i]
 
+			local chunkStartPos = (i - 1) * LIMIT
 			for j = 1, #chunk do
-				callback(j, chunk[j])
+				callback(chunkStartPos + j, chunk[j])
 			end
 		end
 	end
+	
 
 	function InfArray:Find(value: any): number?
 		for i = 1, #self._chunks do
@@ -105,18 +111,20 @@ local InfArray = {} do
 			end
 		end
 
-        return nil
+		return nil
 	end
 
-	function InfArray:GetValueAtIndex(index: number): any?
+
+	@native function InfArray:GetValueAtIndex(index: number): any?
 		local chunkIndex = math.ceil(index / LIMIT)
 		local chunk = self._chunks[chunkIndex]
 
-		if not chunk then return nil, nil, nil end
+		if not chunk then return nil end
 
 		local indexInChunk = index - (chunkIndex - 1) * LIMIT
 		return chunk[indexInChunk]
 	end
+
 
 	function InfArray:InsertBack(value: any)
 		local insertChunk = self._chunks[#self._chunks]
@@ -130,6 +138,7 @@ local InfArray = {} do
 		self._count += 1
 	end
 
+
 	function InfArray:RemoveIndex(index: number)
 		local chunkIndex = math.ceil(index / LIMIT)
 		local chunk = self._chunks[chunkIndex]
@@ -137,15 +146,19 @@ local InfArray = {} do
 		if not chunk then return end
 
 		local indexInChunk = index - (chunkIndex - 1) * LIMIT
+		
+		local oldValue = chunk[indexInChunk]
 		chunk[indexInChunk] = nil
 
-		if next(chunk) == nil then
-			self._chunks[chunkIndex] = nil
-			self._count -= LIMIT
+		-- Cleanup chunk if empty?
+
+		if oldValue ~= nil then
+			self._count -= 1
 		end
 	end
+	
 
-	function InfArray:Replace(index: number, newValue: any)
+	@native function InfArray:Replace(index: number, newValue: any)
 		local chunkIndex = math.ceil(index / LIMIT)
 		local chunk = self._chunks[chunkIndex]
 
@@ -154,200 +167,12 @@ local InfArray = {} do
 		local indexInChunk = index - (chunkIndex - 1) * LIMIT
 		chunk[indexInChunk] = newValue
 	end
+	
+	
+	function InfArray:GetTotalLen(): number
+		return self._count
+	end
 end
 
-
---[=[]]
-function module.new(tableType: 'index' | 'dict', count: number?, value: any?)
-	local InfTable = {
-		_type = tableType or 'dict', -- assuming it is a dictionnary as default
-		_chunks = {}
-	}
-
-
-
-	function InfTable:GetChunk(index: number)
-		return self._chunks[index]
-	end
-
-
-	function InfTable:SetChunk(chunk, value)
-		self._chunks[chunk] = value
-	end
-
-
-	function InfTable:GetTotalElementLen()
-		local i, res = 1, 0
-
-		while self._chunks[i] ~= nil do
-			res += self._type == 'index' and #self._chunks[i] or countInDict(self._chunks[i])
-			i += 1
-		end
-
-		return res
-	end
-
-
-	function InfTable:Iterate(predicate: (index: any, value: any, chunk: { any }) -> any?): any?
-		local finish = false
-
-		local i = 1
-		while self._chunks[i] and not finish do
-			local chunk = self._chunks[i]
-
-			if self._type == 'index' then
-				for j = 1, #chunk do
-					local predicateAnswer = predicate(j, chunk[j], chunk)
-					if predicateAnswer then
-						return predicateAnswer
-					end
-				end
-			else
-				for k, v in pairs(chunk) do
-					local predicateAnswer = predicate(k, v, chunk)
-					if predicateAnswer then
-						return predicateAnswer
-					end
-				end
-			end
-
-			i += 1
-		end
-
-        return nil
-	end
-
-
-	function InfTable:Find(value)
-		local i, items = 1, 0
-		while self._chunks[i] do
-			local chunk = self._chunks[i]
-			local chunkLen
-
-			if self._type == 'index' then
-				chunkLen = #chunk
-				for j = 1, chunkLen do
-					if chunk[j] == value then return j, items+j, i end
-				end
-			else
-				chunkLen = countInDict(chunk)
-				for k, v in pairs(chunk) do
-					if v == value then return k, items+k, i end
-				end
-			end
-
-			i += 1
-			items += chunkLen
-		end
-	end
-
-
-	function InfTable:GetValueAtIndex(index)
-		local i, items = 1, 0
-		while self._chunks[i] do
-			local chunk = self._chunks[i]
-			local chunkLen
-
-			if self._type == 'index' then
-				chunkLen = #chunk
-				if items+chunkLen >= index then
-					return chunk[index-items], i, index-items
-				end
-			else
-				chunkLen = countInDict(chunk)
-				if chunk[index] then return chunk[index], i, index end
-			end
-
-			items += chunkLen
-			i += 1
-		end
-	end
-
-
-	function InfTable:Add(indexOrValue, value)
-		if indexOrValue == nil then
-			return warn('InfTable -> Can not insert nil for index nor value')
-		end
-
-		local cost = 1
-
-		local i = 0
-		while true do
-			i += 1
-
-			local chunk = self._chunks[i]
-			if not chunk then
-				if self._type == 'index' then self._chunks[i] = { indexOrValue }
-				else self._chunks[i] = { [indexOrValue] = value }
-				end
-
-				break
-			end
-
-			-- No space in this chunk
-			local chunkLen = self._type == 'index' and #chunk or countInDict(chunk)
-			if LIMIT - chunkLen <= cost then continue end
-
-			if self._type == 'index' then table.insert(chunk, indexOrValue) print('ins')
-			else chunk[indexOrValue] = value
-			end
-
-			break
-		end
-	end
-
-
-	function InfTable:RemoveIndex(index)
-		if index == nil then
-			return warn('InfTable -> Unknown index to remove')
-		end
-
-		local value, chunkn, chunkIndex = self:GetValueAtIndex(index)
-		if not value then return end
-
-		local chunk = self._chunks[chunkn]
-		if not chunk then return end
-
-		chunk[self._type == 'index' and chunkIndex or index] = nil
-
-		if next(chunk) == nil or countInDict(chunk) == 0 then
-			self._chunks[chunkn] = nil
-
-			-- Push down subsequent chunks to fill the whole
-			local n = 1
-			while self._chunks[chunkn+n] do
-				local chunk = self._chunks[chunkn+n]
-
-				-- Move chunk down
-				self._chunks[chunkn+n-1] = chunk
-				self._chunks[chunkn+n] = nil
-
-				n += 1
-			end
-		elseif self._type == 'index' then
-			-- fill in empty gaps in table
-			for i = chunkIndex, #chunk do
-				chunk[i] = chunk[i+1]
-			end
-		end
-	end
-
-	function InfTable:Replace(index, newValue)
-		if newValue == nil then
-			return self:RemoveIndex(index)
-		end
-
-		local value, chunkn, chunkIndex = self:GetValueAtIndex(index)
-		if not value then return end
-
-		local chunk = self._chunks[chunkn]
-		if not chunk then return end
-
-		chunk[chunkIndex] = newValue
-	end
-
-	return InfTable :: InfTableObject
-end
-]=]
 
 return InfArray
