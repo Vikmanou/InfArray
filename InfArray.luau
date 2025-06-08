@@ -102,10 +102,11 @@ local InfArray = {LIMIT = LIMIT} do
 
 				for i = startChunk, endChunk do
 					local chunk = self._chunks[i]
-					
+
 					-- Process each element in the chunk
 					for j = 1, #chunk do
-						chunk[j] = processFunc(chunk[j])
+						local index = bit32.lshift(i - 1, LIMIT_BITS) + j
+						chunk[j] = processFunc(index, chunk[j])
 					end
 				end
 
@@ -189,7 +190,7 @@ local InfArray = {LIMIT = LIMIT} do
 			local chunkStartPos = bit32.lshift(startChunkIndex - 1, LIMIT_BITS)
 			for index = start, math.min(chunkStartPos + LIMIT - 1, endValue), step do
 				local posInChunk = bit32.band(index - 1, LIMIT_MASK) + 1
-				chunk[posInChunk] = updateFunc(chunk[posInChunk], index)
+				chunk[posInChunk] = updateFunc(index, chunk[posInChunk])
 			end
 		end
 
@@ -209,7 +210,7 @@ local InfArray = {LIMIT = LIMIT} do
 			for index = firstStepElement, chunkStartPos + LIMIT - 1, step do
 				if index > endValue then break end
 				local posInChunk = bit32.band(index - 1, LIMIT_MASK) + 1
-				chunk[posInChunk] = updateFunc(chunk[posInChunk], index)
+				chunk[posInChunk] = updateFunc(index, chunk[posInChunk])
 			end
 		end
 
@@ -227,7 +228,7 @@ local InfArray = {LIMIT = LIMIT} do
 
 				for index = firstStepElement, endValue, step do
 					local posInChunk = bit32.band(index - 1, LIMIT_MASK) + 1
-					chunk[posInChunk] = updateFunc(chunk[posInChunk], index)
+					chunk[posInChunk] = updateFunc(index, chunk[posInChunk])
 				end
 			end
 		end
