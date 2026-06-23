@@ -14,6 +14,7 @@ jobs:
 
       - name: Install Lute
         run: |
+          mkdir -p "$HOME/.local/bin"
           curl -sL "https://github.com/luau-lang/lute/releases/download/${LUTE_VERSION}/lute-linux-x86_64.zip" -o lute.zip
           unzip -q lute.zip -d "$HOME/.local/bin"
           chmod +x "$HOME/.local/bin/lute"
