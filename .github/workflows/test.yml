@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: lute test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lute
+        run: |
+          curl -sL "https://github.com/luau-lang/lute/releases/download/${LUTE_VERSION}/lute-linux-x86_64.zip" -o lute.zip
+          unzip -q lute.zip -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/lute"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        env:
+          LUTE_VERSION: v1.0.0
+
+      - name: Run tests
+        run: lute test

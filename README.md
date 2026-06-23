@@ -1,5 +1,7 @@
 # InfArray
 
+[![Tests](https://github.com/Vikmanou/InfArray/actions/workflows/test.yml/badge.svg)](https://github.com/Vikmanou/InfArray/actions/workflows/test.yml)
+
 > A Luau array that holds more than `2^26` elements by chunking the data across many backing tables. Indices stay valid up to `2^53` — the largest exact integer a Luau `number` can represent.
 
 InfArray exists because a single Luau table cannot grow past `2^26`
