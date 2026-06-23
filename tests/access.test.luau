@@ -1,0 +1,47 @@
+--!strict
+
+local test = require('@std/test')
+local InfArray = require('../InfArray')
+
+test.case('get: out-of-range index returns nil', function(asserts)
+	local arr = InfArray.new()
+	asserts.eq(arr:Get(100), nil)
+end)
+
+test.case('set: overwriting a present element keeps the count', function(asserts)
+	local arr = InfArray.new(5, 0)
+	arr:Set(3, 99)
+	asserts.eq(arr:Get(3), 99)
+	asserts.eq(arr:Count(), 5)
+end)
+
+test.case('set: clearing a present element decrements the count', function(asserts)
+	local arr = InfArray.new(5, 0)
+	arr:Set(3, nil)
+	asserts.eq(arr:Get(3), nil)
+	asserts.eq(arr:Count(), 4)
+end)
+
+test.case('set: writing past logical length extends within an existing chunk', function(asserts)
+	local arr = InfArray.new(5, 0)
+	arr:Set(6, 42)
+	asserts.eq(arr:Get(6), 42)
+	asserts.eq(arr:Length(), 6)
+	asserts.eq(arr:Count(), 6)
+end)
+
+test.case('set: no-op when the target chunk does not exist', function(asserts)
+	local arr = InfArray.new()
+	arr:Set(10, 5)
+	asserts.eq(arr:Get(10), nil)
+	asserts.eq(arr:Length(), 0)
+	asserts.eq(arr:Count(), 0)
+end)
+
+test.case('GetChunkAndPosition returns the chunk and 1-based local position', function(asserts)
+	local arr = InfArray.new(5, 0)
+	local chunk, pos = arr:GetChunkAndPosition(3)
+	asserts.that(chunk ~= nil)
+	asserts.eq(pos, 3)
+	asserts.eq((chunk :: any)[pos], 0)
+end)
