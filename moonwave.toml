@@ -1,0 +1,41 @@
+title = "InfArray"
+gitRepoUrl = "https://github.com/Vikmanou/InfArray"
+gitSourceBranch = "main"
+changelog = true
+
+# Standalone Benchmarks tab (served from pages/benchmarks.md).
+[[navbar.items]]
+label = "Benchmarks"
+to = "/benchmarks"
+position = "left"
+
+[docusaurus]
+projectName = "InfArray"
+organizationName = "Vikmanou"
+url = "https://vikmanou.github.io"
+baseUrl = "/InfArray/"
+tagline = "A chunked Luau array that bypasses the 2^26 table size limit"
+onBrokenLinks = "warn"
+onBrokenMarkdownLinks = "warn"
+onBrokenAnchors = "warn"
+
+# Custom landing page: a hero built from the README plus feature cards.
+[home]
+enabled = true
+includeReadme = true
+
+[[home.features]]
+title = "Beyond 2^26"
+description = "Chunks values past Luau's per-table size cap, so one logical array scales to 2^53 elements."
+
+[[home.features]]
+title = "Hole-safe by design"
+description = "Removals leave nil holes and per-chunk lengths are tracked explicitly."
+
+[[home.features]]
+title = "Built for bulk"
+description = "IterateChunks hands you raw chunks with their base offset and length for maximum throughput."
+
+[footer]
+style = "dark"
+copyright = "Copyright © 2026 Vikmanou. Built with Moonwave."

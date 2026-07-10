@@ -17,3 +17,6 @@ trace.json
 
 .claude/
 .vscode/
+
+# Moonwave documentation build output
+/build

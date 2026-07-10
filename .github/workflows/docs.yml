@@ -1,0 +1,32 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+
+# Allow the job to push the built site to the gh-pages branch.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish docs to GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Moonwave
+        run: npm i -g moonwave@latest
+
+      - name: Build and publish
+        run: |
+          git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git config --global user.email "github-actions-bot@users.noreply.github.com"
+          git config --global user.name "github-actions-bot"
+          moonwave build --publish --code .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

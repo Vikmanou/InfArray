@@ -44,9 +44,57 @@ local function locateWithIndex(index: number): (number, number)
 end
 
 
+--[=[
+	@class InfArray
+
+	A chunked array that bypasses Luau's internal table size limit of 2^26.
+
+	Values are stored across fixed-size chunks so a single logical array can hold
+	up to 2^53 elements (the largest exact integer a Luau `number` can represent).
+	Indices are 1-based and resolved with integer math.
+
+	Removals leave `nil` holes. Per-chunk logical lengths are tracked explicitly, so
+	the implementation never relies on `#` over a chunk (which is undefined once the
+	chunk contains holes). [InfArray:Length] reports the highest assigned index
+	(holes included), while [InfArray:Count] reports the number of present elements.
+
+	```lua
+	local InfArray = require(path.to.InfArray)
+
+	local arr = InfArray.new()
+	arr:PushBack("a")
+	arr:PushBack("b")
+	print(arr:Get(1)) --> "a"
+	print(#arr)       --> 2
+	```
+
+	Several backwards-compatible aliases exist for the primary methods:
+	`get`/`GetValueAtIndex` (Get), `set`/`Replace` (Set), `InsertBack` (PushBack),
+	`TransformRange` (Transform), `GetTotalLen` (Count) and `GetLength` (Length).
+]=]
 local InfArray = { LIMIT = LIMIT, locate = locateWithIndex }
 InfArray.__index = InfArray
 
+--[=[
+	@within InfArray
+	@prop LIMIT number
+	@readonly
+	@tag static
+
+	Maximum number of elements a single chunk can hold (2^26 = 67108864).
+]=]
+
+--[=[
+	@within InfArray
+	@function new
+	@param size number? -- Optional initial length; pre-allocates chunks.
+	@param value any? -- Optional fill value written to every pre-allocated slot.
+	@return InfArray
+
+	Creates a new [InfArray]. When `size` is given, the array is pre-sized to `size`
+	elements; if `value` is also provided, every slot is filled with it and
+	[InfArray:Count] reflects the full size (otherwise the slots start as holes).
+]=]
 function InfArray.new(size: number?, value: any?): InfArray
 	local self = setmetatable({
 		_chunks = {},
@@ -72,6 +120,15 @@ function InfArray.new(size: number?, value: any?): InfArray
 end
 
 
+--[=[
+	@within InfArray
+	@method Get
+	@param index number -- 1-based global index.
+	@return any? -- The value at `index`, or `nil` if unset or out of range.
+
+	Reads the value at `index` in O(1). Returns `nil` for holes and for indices
+	whose chunk does not exist yet.
+]=]
 function InfArray.Get(self: InfArray, index: number): any?
 	local chunkIndex, pos = locateWithIndex(index)
 	local chunk = self._chunks[chunkIndex]
@@ -79,8 +136,17 @@ function InfArray.Get(self: InfArray, index: number): any?
 end
 
 
--- In-range O(1) write. No-op if the index's chunk doesn't exist yet; use
--- PushBack or new(size)/SetChunk to grow the array.
+--[=[
+	@within InfArray
+	@method Set
+	@param index number -- 1-based global index within an existing chunk.
+	@param value any? -- New value; pass `nil` to clear the slot into a hole.
+
+	In-range O(1) write that keeps [InfArray:Count] and [InfArray:Length] correct.
+	This is a **no-op** if the index's chunk does not exist yet — use
+	[InfArray:PushBack], [InfArray.new] with a size, or [InfArray:SetChunk] to grow
+	the array first.
+]=]
 function InfArray.Set(self: InfArray, index: number, value: any?)
 	local chunkIndex, pos = locateWithIndex(index)
 	local chunk = self._chunks[chunkIndex]
@@ -108,12 +174,32 @@ function InfArray.Set(self: InfArray, index: number, value: any?)
 end
 
 
+--[=[
+	@within InfArray
+	@method GetChunk
+	@param index number -- 1-based chunk index.
+	@return {any}? -- The raw backing table for that chunk, or `nil`.
+
+	Returns the raw chunk table by chunk index. The returned table may contain
+	`nil` holes and is not length-safe under `#`; pair it with the chunk's tracked
+	length (see [InfArray:IterateChunks]) when scanning it.
+]=]
 function InfArray.GetChunk(self: InfArray, index: number): Chunk?
 	return self._chunks[index]
 end
 
 
--- Replace an entire chunk
+--[=[
+	@within InfArray
+	@method SetChunk
+	@param chunkIndex number -- 1-based chunk index to replace.
+	@param value {any} -- The new backing table for the chunk.
+	@param len number? -- Logical length of `value`; defaults to `#value`.
+
+	Replaces an entire chunk in one call, recomputing [InfArray:Count] for the
+	swapped range and extending [InfArray:Length] if the new chunk reaches further.
+	Prefer this over per-element writes for bulk population.
+]=]
 function InfArray.SetChunk(self: InfArray, chunkIndex: number, value: Chunk, len: number?)
 	local oldChunk = self._chunks[chunkIndex]
 	if oldChunk then
@@ -142,12 +228,31 @@ function InfArray.SetChunk(self: InfArray, chunkIndex: number, value: Chunk, len
 end
 
 
+--[=[
+	@within InfArray
+	@method GetChunkAndPosition
+	@param index number -- 1-based global index.
+	@return {any}? -- The chunk containing `index`, or `nil` if absent.
+	@return number -- The 1-based position of `index` within that chunk.
+
+	Resolves a global index to its chunk and in-chunk position in one call, useful
+	for hot loops that want to read/write a slot without recomputing the location.
+]=]
 function InfArray.GetChunkAndPosition(self: InfArray, index: number): (Chunk?, number)
 	local chunkIndex, pos = locateWithIndex(index)
 	return self._chunks[chunkIndex], pos
 end
 
 
+--[=[
+	@within InfArray
+	@method PushBack
+	@param value any -- Value to append at the end of the array.
+	@return number -- The global index the value was written to.
+
+	Appends `value` after the highest assigned index, allocating a new chunk when
+	the current one fills up. Amortised O(1).
+]=]
 function InfArray.PushBack(self: InfArray, value: any): number
 	local index = self._length + 1
 	local chunkIndex, pos = locateWithIndex(index)
@@ -167,7 +272,14 @@ function InfArray.PushBack(self: InfArray, value: any): number
 	return index
 end
 
--- Note: Leaves a nil hole. Logical length is unchanged.
+--[=[
+	@within InfArray
+	@method RemoveIndex
+	@param index number -- 1-based global index to clear.
+
+	Clears the value at `index`, decrementing [InfArray:Count]. This leaves a `nil`
+	hole — [InfArray:Length] is **unchanged** and later elements are not shifted.
+]=]
 function InfArray.RemoveIndex(self: InfArray, index: number)
 	local chunkIndex, pos = locateWithIndex(index)
 	local chunk = self._chunks[chunkIndex]
@@ -179,8 +291,14 @@ function InfArray.RemoveIndex(self: InfArray, index: number)
 	end
 end
 
--- Holes are skipped.
--- Prefer IterateChunks for bulk throughput
+--[=[
+	@within InfArray
+	@method __iter
+	@ignore
+
+	Generalized `for..in` iteration (`for index, value in arr do`). Holes are
+	skipped. Prefer [InfArray:IterateChunks] for bulk throughput.
+]=]
 function InfArray.__iter(self: InfArray): () -> (number?, any)
 	local chunks, lens = self._chunks, self._lens
 	local chunkCount = #chunks
@@ -215,7 +333,15 @@ function InfArray.__iter(self: InfArray): () -> (number?, any)
 	end
 end
 
--- callback(index, value) -> boolean? ; return true to stop. Holes are skipped.
+--[=[
+	@within InfArray
+	@method Iterate
+	@param callback (index: number, value: any) -> boolean? -- Called for each present element; return `true` to stop early.
+
+	Iterates every present element in ascending index order, skipping holes. Return
+	`true` from `callback` to break out early. For maximum bulk throughput, use
+	[InfArray:IterateChunks] instead.
+]=]
 function InfArray.Iterate(self: InfArray, callback: (index: number, value: any) -> boolean?)
 	local chunks, lens = self._chunks, self._lens
 
@@ -235,10 +361,16 @@ function InfArray.Iterate(self: InfArray, callback: (index: number, value: any) 
 	end
 end
 
--- return true to stop
--- Hands raw chunks to the caller 
--- The caller must nil-check chunk[j] itself
--- Fastest for bulk work
+--[=[
+	@within InfArray
+	@method IterateChunks
+	@param callback (chunk: {any}, base: number, len: number) -> boolean? -- Called once per chunk; return `true` to stop early.
+
+	Hands each raw chunk to `callback` along with its `base` global-index offset and
+	tracked `len`. The fastest way to process the whole array in bulk. The caller
+	**must** nil-check `chunk[j]` itself, since chunks may contain holes. Return
+	`true` to stop early.
+]=]
 function InfArray.IterateChunks(self: InfArray, callback: (chunk: Chunk, base: number, len: number) -> boolean?)
 	local chunks, lens = self._chunks, self._lens
 
@@ -249,7 +381,16 @@ function InfArray.IterateChunks(self: InfArray, callback: (chunk: Chunk, base: n
 	end
 end
 
--- First global index whose value == needle or nil
+--[=[
+	@within InfArray
+	@method Find
+	@param needle any -- Value to search for.
+	@return number? -- The first global index equal to `needle`, or `nil`.
+
+	Linearly scans in ascending order and returns the first global index whose value
+	equals `needle`, or `nil` if not found. Scans to each chunk's tracked length so
+	holes never cut the search short.
+]=]
 function InfArray.Find(self: InfArray, needle: any): number?
 	local chunks, lens = self._chunks, self._lens
 
@@ -267,8 +408,19 @@ function InfArray.Find(self: InfArray, needle: any): number?
 	return nil
 end
 
--- updateFunc(index, value) -> newValue, applied over [start, stop] by step.
--- May turn holes into values (or back); Count() stays correct.
+--[=[
+	@within InfArray
+	@method Transform
+	@param start number -- First global index to visit (inclusive).
+	@param stop number -- Last global index to visit (inclusive).
+	@param step number -- Stride between visited indices.
+	@param updateFunc (index: number, value: any) -> any -- Returns the new value for each visited slot.
+
+	Applies `updateFunc` over the range `[start, stop]` by `step`, writing back each
+	returned value. May turn holes into values (or values back into holes);
+	[InfArray:Count] stays correct either way. Indices whose chunk does not exist
+	are skipped.
+]=]
 function InfArray.Transform(
 	self: InfArray,
 	start: number,
@@ -310,18 +462,37 @@ function InfArray.Transform(
 end
 
 
--- non-nil elements
+--[=[
+	@within InfArray
+	@method Count
+	@return number -- The number of present (non-`nil`) elements.
+
+	Returns how many elements are actually present, excluding holes. O(1).
+]=]
 function InfArray.Count(self: InfArray): number
 	return self._count
 end
 
 
--- Highest assigned index
+--[=[
+	@within InfArray
+	@method Length
+	@return number -- The highest assigned index (holes included).
+
+	Returns the logical length: the highest index ever assigned, counting holes.
+	Equivalent to `#arr`. O(1).
+]=]
 function InfArray.Length(self: InfArray): number
 	return self._length
 end
 
--- `#arr` is the highest assigned index
+--[=[
+	@within InfArray
+	@method __len
+	@ignore
+
+	`#arr` returns the highest assigned index. See [InfArray:Length].
+]=]
 function InfArray.__len(self: InfArray): number
 	return self._length
 end

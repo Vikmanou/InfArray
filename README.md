@@ -1,6 +1,13 @@
+<div align="center">
+
 # InfArray
 
-[![Tests](https://github.com/Vikmanou/InfArray/actions/workflows/test.yml/badge.svg)](https://github.com/Vikmanou/InfArray/actions/workflows/test.yml)
+<img src="https://img.shields.io/badge/InfArray-v1.0.0-7aa2f7?style=for-the-badge&logoColor=white" alt="version" />
+<img src="https://img.shields.io/badge/Luau-Roblox-00A2FF?style=for-the-badge&logoColor=white" alt="luau" />
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-9ece6a?style=for-the-badge" alt="license" /></a>
+<a href="https://github.com/Vikmanou/InfArray/actions/workflows/test.yml"><img src="https://img.shields.io/badge/Tests-44%20passing-1abc9c?style=for-the-badge" alt="tests" /></a>
+
+</div>
 
 > A Luau array that holds more than `2^26` elements by chunking the data across many backing tables. Indices stay valid up to `2^53` — the largest exact integer a Luau `number` can represent.
 
