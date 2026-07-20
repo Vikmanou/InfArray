@@ -9,6 +9,11 @@ label = "Benchmarks"
 to = "/benchmarks"
 position = "left"
 
+[[navbar.items]]
+label = "Blog post"
+href = "https://viken.games/blog/infarray"
+position = "right"
+
 [docusaurus]
 projectName = "InfArray"
 organizationName = "Vikmanou"

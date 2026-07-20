@@ -4,7 +4,7 @@
 --[[
 
     InfArray.luau
-    @Syveric
+    Viken (@Syveric on Roblox) 
 
     Bypass Luau's internal table size limit of 2^26
     by chunking values into segments. Indices use integer math, so
@@ -141,16 +141,17 @@ end
 	@method Set
 	@param index number -- 1-based global index within an existing chunk.
 	@param value any? -- New value; pass `nil` to clear the slot into a hole.
+	@return boolean -- `true` if the write happened, `false` if it was a no-op.
 
 	In-range O(1) write that keeps [InfArray:Count] and [InfArray:Length] correct.
-	This is a **no-op** if the index's chunk does not exist yet — use
-	[InfArray:PushBack], [InfArray.new] with a size, or [InfArray:SetChunk] to grow
-	the array first.
+	Returns `true` when the write lands. This is a **no-op** returning `false` if
+	the index's chunk does not exist yet — use [InfArray:PushBack],
+	[InfArray.new] with a size, or [InfArray:SetChunk] to grow the array first.
 ]=]
-function InfArray.Set(self: InfArray, index: number, value: any?)
+function InfArray.Set(self: InfArray, index: number, value: any?): boolean
 	local chunkIndex, pos = locateWithIndex(index)
 	local chunk = self._chunks[chunkIndex]
-	if not chunk then return end
+	if not chunk then return false end
 
 	local old = chunk[pos]
 	chunk[pos] = value
@@ -171,6 +172,8 @@ function InfArray.Set(self: InfArray, index: number, value: any?)
 			self._length = logical
 		end
 	end
+
+	return true
 end
 
 

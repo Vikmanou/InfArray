@@ -117,7 +117,7 @@ where the per-element overhead actually shows up in a profile.
 | Method                 | Description                                                                                   | Argument(s)                                                              | Returns                       | Time        |
 | ---------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------- | ----------- |
 | `Get`                  | Value at a global index (`nil` if absent or out of range).                                      | `index: number`                                                         | `any?`                        | `O(1)`      |
-| `Set`                  | Overwrite an index inside an existing chunk. Does **not** allocate past the end — use `PushBack` to grow. | `index: number, value: any?`                                  | `nil`                         | `O(1)`      |
+| `Set`                  | Overwrite an index inside an existing chunk. Does **not** allocate past the end — use `PushBack` to grow. Returns whether the write happened. | `index: number, value: any?`                                  | `boolean` (`true` if written, `false` if no-op) | `O(1)`      |
 | `PushBack`             | Append a value to the end.                                                                     | `value: any`                                                            | `index: number` (where it landed) | `O(1)`  |
 | `RemoveIndex`          | Clear an index, leaving a `nil` hole (does not shift; `Length` unchanged).                     | `index: number`                                                         | `nil`                         | `O(1)`      |
 | `Count`                | Number of present (non-`nil`) elements.                                                        | —                                                                       | `number`                      | `O(1)`      |
@@ -243,10 +243,21 @@ lute test
 * **Built for arrays, not dictionaries.** InfArray is a sequence keyed by
   contiguous integer indices. There is no hashed-key storage.
 * **Slower per element than a native table.** Every access pays an extra chunk lookup. Use InfArray when you need capacity past `2^26`, not for small arrays that already fit.
-* **`Set` does not grow the array.** It only writes inside an existing chunk; use  `PushBack`, `new(size)` or `SetChunk` to allocate.
+* **`Set` does not allocate new chunks.** It writes only inside a chunk that already exists, returning `true` when the write lands and `false` (a no-op) when the target index maps to an unallocated chunk. Within an existing chunk it *can* fill a hole past the current `Length()` and extend it; it just won't create the next chunk — use `PushBack`, `new(size)` or `SetChunk` for that.
 * **Removals leave holes.** `RemoveIndex` does not shift elements. The slot becomes `nil`. This keeps removal `O(1)`.
 * **Large pre-allocation is slow.** Initializing beyond `2^24` elements via
   `new(size, value)` may be significantly slower. This is due to Luau's `table.create` function taking longer for initializing larger counts (with `table.create(2^26)` taking ~0.5s).
+
+---
+
+## Further reading
+
+I wrote up the design decisions, the `2^26` limit, and the performance
+trade-offs behind InfArray in a blog post:
+
+* **[The story behind InfArray](https://viken.games/blog/infarray)** — why a
+  single Luau table caps out, how the chunking scheme works, and the
+  performance-vs-ergonomics tension that brought the two-tier API.
 
 ---
 
