@@ -50,14 +50,14 @@ print(#arr)       --&gt; 2
 Several backwards-compatible aliases exist for the primary methods:
 `get`/`GetValueAtIndex` (Get), `set`/`Replace` (Set), `InsertBack` (PushBack),
 `TransformRange` (Transform), `GetTotalLen` (Count) and `GetLength` (Length)."><link data-rh="true" rel="canonical" href="https://vikmanou.github.io/InfArray/api/InfArray"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/api/InfArray" hreflang="en"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/api/InfArray" hreflang="x-default"><link rel="stylesheet" href="/InfArray/assets/css/styles.9632da8c.css">
-<script src="/InfArray/assets/js/runtime~main.8e572475.js" defer="defer"></script>
-<script src="/InfArray/assets/js/main.8c5c8656.js" defer="defer"></script>
+<script src="/InfArray/assets/js/runtime~main.82c47aaf.js" defer="defer"></script>
+<script src="/InfArray/assets/js/main.8a0a7395.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
 <symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
 </defs></svg>
-<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/InfArray/"><b class="navbar__title text--truncate">InfArray</b></a><a class="navbar__item navbar__link" href="/InfArray/docs/intro">Docs</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/InfArray/api/">API</a><a class="navbar__item navbar__link" href="/InfArray/benchmarks">Benchmarks</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/Vikmanou/InfArray" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0 docPageContainer_wNNk"><div class="docPage_Dpn1"><div class="docSidebarContainer_o_re"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/InfArray/api/InfArray"><span title="​Inf​Array" class="linkLabel_WmDU">​Inf​Array</span></a></li></ul></nav></div></div><main class="docMainContainer_HJE1"><div class="container padding-vert--lg"><div class="row"><div class="col docItemCol_MU3C"><div class="docItemContainer_Wv98"><article><div class="member_J0w1 markdown"><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_oUs_"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><header><h1 class="docTitle_mZRt" style="text-decoration:none"><span style="display:inline-block">Inf</span><span style="display:inline-block">Array</span></h1><div class="luaClassTags_EipM"></div><div>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/InfArray/"><b class="navbar__title text--truncate">InfArray</b></a><a class="navbar__item navbar__link" href="/InfArray/docs/intro">Docs</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/InfArray/api/">API</a><a class="navbar__item navbar__link" href="/InfArray/benchmarks">Benchmarks</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://viken.games/blog/infarray" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">Blog post<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><a href="https://github.com/Vikmanou/InfArray" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0 docPageContainer_wNNk"><div class="docPage_Dpn1"><div class="docSidebarContainer_o_re"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/InfArray/api/InfArray"><span title="​Inf​Array" class="linkLabel_WmDU">​Inf​Array</span></a></li></ul></nav></div></div><main class="docMainContainer_HJE1"><div class="container padding-vert--lg"><div class="row"><div class="col docItemCol_MU3C"><div class="docItemContainer_Wv98"><article><div class="member_J0w1 markdown"><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_oUs_"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><header><h1 class="docTitle_mZRt" style="text-decoration:none"><span style="display:inline-block">Inf</span><span style="display:inline-block">Array</span></h1><div class="luaClassTags_EipM"></div><div>
 <p>A chunked array that bypasses Luau's internal table size limit of 2^26.</p>
 <p>
   Values are stored across fixed-size chunks so a single logical array can hold
@@ -104,18 +104,20 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   Reads the value at <code>index</code> in O(1). Returns <code>nil</code> for holes and for indices
   whose chunk does not exist yet.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Set"><code style="text-decoration:none">Set</code><a href="#Set" class="hash-link" aria-label="Direct link to Set" title="Direct link to Set" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L150"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Set</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Set"><code style="text-decoration:none">Set</code><a href="#Set" class="hash-link" aria-label="Direct link to Set" title="Direct link to Set" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L151"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Set</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>1-based global index within an existing chunk.</p>
 </span></span></div><div><code>value<!-- -->: </code><code class="blue_P4bS">any?</code><span class="inlineDescription_G7Er">-- <span>
 <p>New value; pass <code>nil</code> to clear the slot into a hole.</p>
-</span></span></div></div><code>) → </code><code>(</code><code>)</code></div><div>
+</span></span></div></div><code>) → </code><code class="blue_P4bS">boolean</code><span class="inlineDescription_G7Er">-- <span>
+<p><code>true</code> if the write happened, <code>false</code> if it was a no-op.</p>
+</span></span></div><div>
 <p>
   In-range O(1) write that keeps <a href="/InfArray/api/InfArray#Count">InfArray:Count</a> and <a href="/InfArray/api/InfArray#Length">InfArray:Length</a> correct.
-  This is a <strong>no-op</strong> if the index's chunk does not exist yet — use
-  <a href="/InfArray/api/InfArray#PushBack">InfArray:PushBack</a>, <a href="/InfArray/api/InfArray#new">InfArray.new</a> with a size, or <a href="/InfArray/api/InfArray#SetChunk">InfArray:SetChunk</a> to grow
-  the array first.
+  Returns <code>true</code> when the write lands. This is a <strong>no-op</strong> returning <code>false</code> if
+  the index's chunk does not exist yet — use <a href="/InfArray/api/InfArray#PushBack">InfArray:PushBack</a>,
+  <a href="/InfArray/api/InfArray#new">InfArray.new</a> with a size, or <a href="/InfArray/api/InfArray#SetChunk">InfArray:SetChunk</a> to grow the array first.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="GetChunk"><code style="text-decoration:none">GetChunk</code><a href="#GetChunk" class="hash-link" aria-label="Direct link to GetChunk" title="Direct link to GetChunk" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L187"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">GetChunk</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="GetChunk"><code style="text-decoration:none">GetChunk</code><a href="#GetChunk" class="hash-link" aria-label="Direct link to GetChunk" title="Direct link to GetChunk" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L190"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">GetChunk</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>1-based chunk index.</p>
 </span></span></div></div><code>) → </code><code class="purple_ieR2">{</code><code class="blue_P4bS">any</code><code class="purple_ieR2">}</code><code class="blue_P4bS">?</code><span class="inlineDescription_G7Er">-- <span>
 <p>The raw backing table for that chunk, or <code>nil</code>.</p>
@@ -125,7 +127,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   <code>nil</code> holes and is not length-safe under <code>#</code>; pair it with the chunk's tracked
   length (see <a href="/InfArray/api/InfArray#IterateChunks">InfArray:IterateChunks</a>) when scanning it.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="SetChunk"><code style="text-decoration:none">SetChunk</code><a href="#SetChunk" class="hash-link" aria-label="Direct link to SetChunk" title="Direct link to SetChunk" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L203"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">SetChunk</code><code>(</code><div class="inset_uKQm"><div><code>chunkIndex<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="SetChunk"><code style="text-decoration:none">SetChunk</code><a href="#SetChunk" class="hash-link" aria-label="Direct link to SetChunk" title="Direct link to SetChunk" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L206"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">SetChunk</code><code>(</code><div class="inset_uKQm"><div><code>chunkIndex<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>1-based chunk index to replace.</p>
 </span></span></div><div><code>value<!-- -->: </code><code class="purple_ieR2">{</code><code class="blue_P4bS">any</code><code class="purple_ieR2">}</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>The new backing table for the chunk.</p>
@@ -137,7 +139,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   swapped range and extending <a href="/InfArray/api/InfArray#Length">InfArray:Length</a> if the new chunk reaches further.
   Prefer this over per-element writes for bulk population.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="GetChunkAndPosition"><code style="text-decoration:none">GetChunkAndPosition</code><a href="#GetChunkAndPosition" class="hash-link" aria-label="Direct link to GetChunkAndPosition" title="Direct link to GetChunkAndPosition" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L241"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">GetChunkAndPosition</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="GetChunkAndPosition"><code style="text-decoration:none">GetChunkAndPosition</code><a href="#GetChunkAndPosition" class="hash-link" aria-label="Direct link to GetChunkAndPosition" title="Direct link to GetChunkAndPosition" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L244"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">GetChunkAndPosition</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>1-based global index.</p>
 </span></span></div></div><code>) → </code><code>(</code><div class="inset_uKQm"><div><code class="purple_ieR2">{</code><code class="blue_P4bS">any</code><code class="purple_ieR2">}</code><code class="blue_P4bS">?</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>The chunk containing <code>index</code>, or <code>nil</code> if absent.</p>
@@ -148,7 +150,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   Resolves a global index to its chunk and in-chunk position in one call, useful
   for hot loops that want to read/write a slot without recomputing the location.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="PushBack"><code style="text-decoration:none">PushBack</code><a href="#PushBack" class="hash-link" aria-label="Direct link to PushBack" title="Direct link to PushBack" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L256"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">PushBack</code><code>(</code><div class="inset_uKQm"><div><code>value<!-- -->: </code><code class="blue_P4bS">any</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="PushBack"><code style="text-decoration:none">PushBack</code><a href="#PushBack" class="hash-link" aria-label="Direct link to PushBack" title="Direct link to PushBack" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L259"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">PushBack</code><code>(</code><div class="inset_uKQm"><div><code>value<!-- -->: </code><code class="blue_P4bS">any</code><span class="inlineDescription_G7Er">-- <span>
 <p>Value to append at the end of the array.</p>
 </span></span></div></div><code>) → </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>The global index the value was written to.</p>
@@ -157,14 +159,14 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   Appends <code>value</code> after the highest assigned index, allocating a new chunk when
   the current one fills up. Amortised O(1).
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="RemoveIndex"><code style="text-decoration:none">RemoveIndex</code><a href="#RemoveIndex" class="hash-link" aria-label="Direct link to RemoveIndex" title="Direct link to RemoveIndex" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L283"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">RemoveIndex</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="RemoveIndex"><code style="text-decoration:none">RemoveIndex</code><a href="#RemoveIndex" class="hash-link" aria-label="Direct link to RemoveIndex" title="Direct link to RemoveIndex" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L286"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">RemoveIndex</code><code>(</code><div class="inset_uKQm"><div><code>index<!-- -->: </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>1-based global index to clear.</p>
 </span></span></div></div><code>) → </code><code>(</code><code>)</code></div><div>
 <p>
   Clears the value at <code>index</code>, decrementing <a href="/InfArray/api/InfArray#Count">InfArray:Count</a>. This leaves a <code>nil</code>
   hole — <a href="/InfArray/api/InfArray#Length">InfArray:Length</a> is <strong>unchanged</strong> and later elements are not shifted.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Iterate"><code style="text-decoration:none">Iterate</code><a href="#Iterate" class="hash-link" aria-label="Direct link to Iterate" title="Direct link to Iterate" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L345"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Iterate</code><code>(</code><div class="inset_uKQm"><div><code>callback<!-- -->: </code><code class="purple_ieR2">(</code><div class="inset_uKQm"><code>index<!-- -->: </code><code class="blue_P4bS">number</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>value<!-- -->: </code><code class="blue_P4bS">any</code></div><code class="purple_ieR2">)</code><code class="purple_ieR2"> → </code><code class="blue_P4bS">boolean?</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Iterate"><code style="text-decoration:none">Iterate</code><a href="#Iterate" class="hash-link" aria-label="Direct link to Iterate" title="Direct link to Iterate" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L348"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Iterate</code><code>(</code><div class="inset_uKQm"><div><code>callback<!-- -->: </code><code class="purple_ieR2">(</code><div class="inset_uKQm"><code>index<!-- -->: </code><code class="blue_P4bS">number</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>value<!-- -->: </code><code class="blue_P4bS">any</code></div><code class="purple_ieR2">)</code><code class="purple_ieR2"> → </code><code class="blue_P4bS">boolean?</code><span class="inlineDescription_G7Er">-- <span>
 <p>Called for each present element; return <code>true</code> to stop early.</p>
 </span></span></div></div><code>) → </code><code>(</code><code>)</code></div><div>
 <p>
@@ -172,7 +174,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   <code>true</code> from <code>callback</code> to break out early. For maximum bulk throughput, use
   <a href="/InfArray/api/InfArray#IterateChunks">InfArray:IterateChunks</a> instead.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="IterateChunks"><code style="text-decoration:none">IterateChunks</code><a href="#IterateChunks" class="hash-link" aria-label="Direct link to IterateChunks" title="Direct link to IterateChunks" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L374"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">IterateChunks</code><code>(</code><div class="inset_uKQm"><div><code>callback<!-- -->: </code><code class="purple_ieR2">(</code><div class="inset_uKQm"><code>chunk<!-- -->: </code><code class="green_DgR4">{</code><code class="blue_P4bS">any</code><code class="green_DgR4">}</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>base<!-- -->: </code><code class="blue_P4bS">number</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>len<!-- -->: </code><code class="blue_P4bS">number</code></div><code class="purple_ieR2">)</code><code class="purple_ieR2"> → </code><code class="blue_P4bS">boolean?</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="IterateChunks"><code style="text-decoration:none">IterateChunks</code><a href="#IterateChunks" class="hash-link" aria-label="Direct link to IterateChunks" title="Direct link to IterateChunks" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L377"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">IterateChunks</code><code>(</code><div class="inset_uKQm"><div><code>callback<!-- -->: </code><code class="purple_ieR2">(</code><div class="inset_uKQm"><code>chunk<!-- -->: </code><code class="green_DgR4">{</code><code class="blue_P4bS">any</code><code class="green_DgR4">}</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>base<!-- -->: </code><code class="blue_P4bS">number</code><code class="purple_ieR2">,</code></div><div class="inset_uKQm"><code>len<!-- -->: </code><code class="blue_P4bS">number</code></div><code class="purple_ieR2">)</code><code class="purple_ieR2"> → </code><code class="blue_P4bS">boolean?</code><span class="inlineDescription_G7Er">-- <span>
 <p>Called once per chunk; return <code>true</code> to stop early.</p>
 </span></span></div></div><code>) → </code><code>(</code><code>)</code></div><div>
 <p>
@@ -181,7 +183,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   <strong>must</strong> nil-check <code>chunk[j]</code> itself, since chunks may contain holes. Return
   <code>true</code> to stop early.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Find"><code style="text-decoration:none">Find</code><a href="#Find" class="hash-link" aria-label="Direct link to Find" title="Direct link to Find" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L394"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Find</code><code>(</code><div class="inset_uKQm"><div><code>needle<!-- -->: </code><code class="blue_P4bS">any</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Find"><code style="text-decoration:none">Find</code><a href="#Find" class="hash-link" aria-label="Direct link to Find" title="Direct link to Find" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L397"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Find</code><code>(</code><div class="inset_uKQm"><div><code>needle<!-- -->: </code><code class="blue_P4bS">any</code><span class="inlineDescription_G7Er">-- <span>
 <p>Value to search for.</p>
 </span></span></div></div><code>) → </code><code class="blue_P4bS">number?</code><span class="inlineDescription_G7Er">-- <span>
 <p>The first global index equal to <code>needle</code>, or <code>nil</code>.</p>
@@ -191,7 +193,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   equals <code>needle</code>, or <code>nil</code> if not found. Scans to each chunk's tracked length so
   holes never cut the search short.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Transform"><code style="text-decoration:none">Transform</code><a href="#Transform" class="hash-link" aria-label="Direct link to Transform" title="Direct link to Transform" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L424"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Transform</code><code>(</code><div class="inset_uKQm"><div><code>start<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Transform"><code style="text-decoration:none">Transform</code><a href="#Transform" class="hash-link" aria-label="Direct link to Transform" title="Direct link to Transform" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L427"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Transform</code><code>(</code><div class="inset_uKQm"><div><code>start<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>First global index to visit (inclusive).</p>
 </span></span></div><div><code>stop<!-- -->: </code><code class="blue_P4bS">number</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>Last global index to visit (inclusive).</p>
@@ -206,11 +208,11 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
   <a href="/InfArray/api/InfArray#Count">InfArray:Count</a> stays correct either way. Indices whose chunk does not exist
   are skipped.
 </p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Count"><code style="text-decoration:none">Count</code><a href="#Count" class="hash-link" aria-label="Direct link to Count" title="Direct link to Count" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L472"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Count</code><code>(</code><code>) → </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Count"><code style="text-decoration:none">Count</code><a href="#Count" class="hash-link" aria-label="Direct link to Count" title="Direct link to Count" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L475"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Count</code><code>(</code><code>) → </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>The number of present (non-<code>nil</code>) elements.</p>
 </span></span></div><div>
 <p>Returns how many elements are actually present, excluding holes. O(1).</p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Length"><code style="text-decoration:none">Length</code><a href="#Length" class="hash-link" aria-label="Direct link to Length" title="Direct link to Length" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L485"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Length</code><code>(</code><code>) → </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Length"><code style="text-decoration:none">Length</code><a href="#Length" class="hash-link" aria-label="Direct link to Length" title="Direct link to Length" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/Vikmanou/InfArray/blob/main/InfArray.luau#L488"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>InfArray<!-- -->:</code><code class="green_DgR4">Length</code><code>(</code><code>) → </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>The highest assigned index (holes included).</p>
 </span></span></div><div>
 <p>
@@ -270,7 +272,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
         },
         {
             &quot;name&quot;: &quot;Set&quot;,
-            &quot;desc&quot;: &quot;In-range O(1) write that keeps [InfArray:Count] and [InfArray:Length] correct.\nThis is a **no-op** if the index&#x27;s chunk does not exist yet — use\n[InfArray:PushBack], [InfArray.new] with a size, or [InfArray:SetChunk] to grow\nthe array first.&quot;,
+            &quot;desc&quot;: &quot;In-range O(1) write that keeps [InfArray:Count] and [InfArray:Length] correct.\nReturns `true` when the write lands. This is a **no-op** returning `false` if\nthe index&#x27;s chunk does not exist yet — use [InfArray:PushBack],\n[InfArray.new] with a size, or [InfArray:SetChunk] to grow the array first.&quot;,
             &quot;params&quot;: [
                 {
                     &quot;name&quot;: &quot;index&quot;,
@@ -283,10 +285,15 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
                     &quot;lua_type&quot;: &quot;any?&quot;
                 }
             ],
-            &quot;returns&quot;: [],
+            &quot;returns&quot;: [
+                {
+                    &quot;desc&quot;: &quot;`true` if the write happened, `false` if it was a no-op.&quot;,
+                    &quot;lua_type&quot;: &quot;boolean&quot;
+                }
+            ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 150,
+                &quot;line&quot;: 151,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -308,7 +315,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 187,
+                &quot;line&quot;: 190,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -335,7 +342,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 203,
+                &quot;line&quot;: 206,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -361,7 +368,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 241,
+                &quot;line&quot;: 244,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -383,7 +390,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 256,
+                &quot;line&quot;: 259,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -400,7 +407,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 283,
+                &quot;line&quot;: 286,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -412,7 +419,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;ignore&quot;: true,
             &quot;source&quot;: {
-                &quot;line&quot;: 302,
+                &quot;line&quot;: 305,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -429,7 +436,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 345,
+                &quot;line&quot;: 348,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -446,7 +453,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 374,
+                &quot;line&quot;: 377,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -468,7 +475,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 394,
+                &quot;line&quot;: 397,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -500,7 +507,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 424,
+                &quot;line&quot;: 427,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -516,7 +523,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 472,
+                &quot;line&quot;: 475,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -532,7 +539,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             ],
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;source&quot;: {
-                &quot;line&quot;: 485,
+                &quot;line&quot;: 488,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         },
@@ -544,7 +551,7 @@ arr<span class="token punctuation">:</span><span class="token function">PushBack
             &quot;function_type&quot;: &quot;method&quot;,
             &quot;ignore&quot;: true,
             &quot;source&quot;: {
-                &quot;line&quot;: 496,
+                &quot;line&quot;: 499,
                 &quot;path&quot;: &quot;InfArray.luau&quot;
             }
         }
