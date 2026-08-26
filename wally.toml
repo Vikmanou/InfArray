@@ -1,0 +1,12 @@
+[package]
+name = "vikmanou/infarray"
+version = "1.0.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+license = "MIT"
+description = "Bypass Luau's internal table size limitation of 2^26"
+authors = ["Viken <>"]
+homepage = "https://vikmanou.github.io/InfArray/"
+repository = "https://github.com/Vikmanou/InfArray"
+exclude = ["**"]
+include = ["InfArray.luau", "wally.toml", "README.md", "LICENSE"]
