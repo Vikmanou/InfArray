@@ -34,20 +34,32 @@ test.case('LIMIT constant is 2^26', function(asserts)
 	asserts.eq(InfArray.LIMIT, 2 ^ 26)
 end)
 
-test.case('locate: maps the first index to chunk 1, position 1', function(asserts)
-	local chunkIndex, pos = InfArray.locate(1)
-	asserts.eq(chunkIndex, 1)
+test.case('GetChunkAndPosition: maps the first index to chunk 1, position 1', function(asserts)
+	local arr = InfArray.new()
+	local first = { 'a' }
+	arr:SetChunk(1, first, 1)
+
+	local chunk, pos = arr:GetChunkAndPosition(1)
+	asserts.eq(chunk, first)
 	asserts.eq(pos, 1)
 end)
 
-test.case('locate: last index of chunk 1 is at LIMIT', function(asserts)
-	local chunkIndex, pos = InfArray.locate(InfArray.LIMIT)
-	asserts.eq(chunkIndex, 1)
+test.case('GetChunkAndPosition: last index of chunk 1 is at LIMIT', function(asserts)
+	local arr = InfArray.new()
+	local first = { 'a' }
+	arr:SetChunk(1, first, 1)
+
+	local chunk, pos = arr:GetChunkAndPosition(InfArray.LIMIT)
+	asserts.eq(chunk, first)
 	asserts.eq(pos, InfArray.LIMIT)
 end)
 
-test.case('locate: first index of chunk 2 wraps to position 1', function(asserts)
-	local chunkIndex, pos = InfArray.locate(InfArray.LIMIT + 1)
-	asserts.eq(chunkIndex, 2)
+test.case('GetChunkAndPosition: first index of chunk 2 wraps to position 1', function(asserts)
+	local arr = InfArray.new()
+	local second = { 'b' }
+	arr:SetChunk(2, second, 1)
+
+	local chunk, pos = arr:GetChunkAndPosition(InfArray.LIMIT + 1)
+	asserts.eq(chunk, second)
 	asserts.eq(pos, 1)
 end)

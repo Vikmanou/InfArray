@@ -48,19 +48,22 @@ A global 1-based `index` maps to a chunk and a 1-based position inside it:
 ```lua
 local LIMIT = 2 ^ 26 -- 67,108,864 elements per chunk
 
-local function locate(index)
-    local i = index - 1
-    local chunkIndex = i // LIMIT
-    return chunkIndex + 1, i - chunkIndex * LIMIT + 1
-end
+local i = index - 1
+local chunkIndex = i // LIMIT
+local pos = i - chunkIndex * LIMIT + 1
+chunkIndex += 1
 ```
 
-The instance keeps four fields:
+That arithmetic is written out at each call site rather than kept in a helper, so
+the hot paths never pay a call.
+
+The instance keeps five fields:
 
 | Field      | Meaning                                                        |
 | ---------- | ------------------------------------------------------------- |
 | `_chunks`  | Array of backing tables; each holds up to `LIMIT` elements.   |
 | `_lens`    | Per-chunk logical length (holes included).                    |
+| `_dense`   | Per chunk: whether it is known to be hole-free up to its length. |
 | `_length`  | Logical span of the whole array — the highest assigned index. |
 | `_count`   | Number of present (non-`nil`) elements.                       |
 
@@ -86,9 +89,12 @@ InfArray resolves this with a **two-tier API**:
 
 * **Safe tier** — `Get`, `Set`, `PushBack`, `RemoveIndex`, `Iterate`,
   `Transform`. 
-* **Raw tier** — `GetChunk`, `SetChunk`, `IterateChunks`, `GetChunkAndPosition`,  and the exported `InfArray.locate`.
+* **Raw tier** — `GetChunk`, `SetChunk`, `IterateChunks`, `GetChunkAndPosition`.
   They are the fastest path for bulk work, but **you** are responsible for
-  nil-checking and respecting per-chunk lengths.
+  nil-checking and respecting per-chunk lengths. Read freely; clearing a slot in
+  a raw chunk yourself desyncs the hole tracking `Find` and `Iterate` rely on.
+  Use `RemoveIndex` or `Set` for that. See
+  [Lengths & Holes](docs/lengths-and-holes.md).
 
 ```lua
 -- Safe: pays a callback + hole-skip per element
@@ -137,7 +143,6 @@ The array also supports `#arr` (via `__len`, equals `Length()`) and
 Also exported:
 
 * `InfArray.LIMIT` — elements per chunk (`2^26`).
-* `InfArray.locate(index)` — maps a global index to `chunkIndex, posInChunk`.
 
 ###### *n is the number of elements.*
 

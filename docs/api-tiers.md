@@ -19,9 +19,9 @@ default.
 
 [`GetChunk`](/api/InfArray#GetChunk), [`SetChunk`](/api/InfArray#SetChunk),
 [`IterateChunks`](/api/InfArray#IterateChunks),
-[`GetChunkAndPosition`](/api/InfArray#GetChunkAndPosition), and the exported
-[`InfArray.locate`](/api/InfArray). These are the fastest path for bulk work, but
-**you** are responsible for nil-checking and respecting per-chunk lengths.
+[`GetChunkAndPosition`](/api/InfArray#GetChunkAndPosition). These are the fastest
+path for bulk work, but **you** are responsible for nil-checking and respecting
+per-chunk lengths.
 
 ```lua
 -- Safe: pays a callback + hole-skip per element

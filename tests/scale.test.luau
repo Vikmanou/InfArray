@@ -8,29 +8,40 @@ local InfArray = require('../InfArray')
 local LIMIT = InfArray.LIMIT
 local HIGH_CHUNK = 2 ^ 27
 
-test.case('locate maps indices on both sides of the LIMIT boundary', function(asserts)
-	local c, p = InfArray.locate(LIMIT)
-	asserts.eq(c, 1)
-	asserts.eq(p, LIMIT)
+test.case('indices on both sides of the LIMIT boundary land in the right chunk', function(asserts)
+	local arr = InfArray.new()
+	local first = table.create(LIMIT, 0)
+	local second = { 0 }
+	arr:SetChunk(1, first, LIMIT)
+	arr:SetChunk(2, second, 1)
 
-	c, p = InfArray.locate(LIMIT + 1)
-	asserts.eq(c, 2)
-	asserts.eq(p, 1)
+	local chunk, pos = arr:GetChunkAndPosition(LIMIT)
+	asserts.eq(chunk, first)
+	asserts.eq(pos, LIMIT)
 
-	c, p = InfArray.locate(2 * LIMIT)
-	asserts.eq(c, 2)
-	asserts.eq(p, LIMIT)
+	chunk, pos = arr:GetChunkAndPosition(LIMIT + 1)
+	asserts.eq(chunk, second)
+	asserts.eq(pos, 1)
 
-	c, p = InfArray.locate(2 * LIMIT + 1)
-	asserts.eq(c, 3)
-	asserts.eq(p, 1)
+	chunk, pos = arr:GetChunkAndPosition(2 * LIMIT)
+	asserts.eq(chunk, second)
+	asserts.eq(pos, LIMIT)
+
+	chunk, pos = arr:GetChunkAndPosition(2 * LIMIT + 1)
+	asserts.eq(chunk, nil)
+	asserts.eq(pos, 1)
 end)
 
-test.case('locate stays exact near 2^53 without bit truncation', function(asserts)
+test.case('index resolution stays exact near 2^53 without bit truncation', function(asserts)
+	local arr = InfArray.new()
 	local topIndex = (HIGH_CHUNK - 1) * LIMIT + 1
-	local c, p = InfArray.locate(topIndex)
-	asserts.eq(c, HIGH_CHUNK)
-	asserts.eq(p, 1)
+	local top = { 'z' }
+	arr:SetChunk(HIGH_CHUNK, top, 1)
+
+	local chunk, pos = arr:GetChunkAndPosition(topIndex)
+	asserts.eq(chunk, top)
+	asserts.eq(pos, 1)
+	asserts.eq(arr:Get(topIndex), 'z')
 end)
 
 test.case('Set / Get address a chunk placed past 2^26', function(asserts)

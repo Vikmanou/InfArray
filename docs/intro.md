@@ -63,4 +63,14 @@ arr:IterateChunks(function(chunk, base, len)
 end)
 ```
 
+## Performance
+
+The hot paths are hand-tuned against the
+[Luau optimizing compiler](https://luau.org/performance): index arithmetic is
+inlined at every call site, field reads are hoisted into locals, and chunks known
+to be hole-free take shorter paths. `Find` drops to a single `table.find`
+fastcall and `Iterate` skips its per-element `nil` check. The module compiles
+under `--!native` and `--!optimize 2`. The README lists the full set, and
+`benchmark/` has the numbers behind it.
+
 See the [API reference](/api/InfArray) for the full list of methods.

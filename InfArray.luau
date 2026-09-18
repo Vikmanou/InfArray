@@ -30,18 +30,12 @@ export type InfArray = typeof(setmetatable(
 	{} :: {
 		_chunks: { Chunk },
 		_lens: { number }, -- length per chunk, holes included
+		_dense: { boolean }, -- per chunk: true only if it is known hole-free up to its length
 		_length: number, -- length of the whole array, holes included
 		_count: number, -- number of present (non nil) elements
 	},
 	{} :: { __index: any }
 ))
-
-
-local function locateWithIndex(index: number): (number, number)
-	local i = index - 1
-	local chunkIndex = i // LIMIT
-	return chunkIndex + 1, i - chunkIndex * LIMIT + 1
-end
 
 
 --[=[
@@ -72,7 +66,7 @@ end
 	`get`/`GetValueAtIndex` (Get), `set`/`Replace` (Set), `InsertBack` (PushBack),
 	`TransformRange` (Transform), `GetTotalLen` (Count) and `GetLength` (Length).
 ]=]
-local InfArray = { LIMIT = LIMIT, locate = locateWithIndex }
+local InfArray = { LIMIT = LIMIT }
 InfArray.__index = InfArray
 
 --[=[
@@ -99,17 +93,21 @@ function InfArray.new(size: number?, value: any?): InfArray
 	local self = setmetatable({
 		_chunks = {},
 		_lens = {},
+		_dense = {},
 		_length = 0,
 		_count = 0
 	}, InfArray)
 
 	if size and size > 0 then
 		local chunkCount = (size - 1) // LIMIT + 1
+		local chunks, lens, dense = self._chunks, self._lens, self._dense
+		local filled = value ~= nil
 
 		for i = 1, chunkCount do
 			local chunkSize = if i < chunkCount then LIMIT else size - (chunkCount - 1) * LIMIT
-			self._chunks[i] = table.create(chunkSize, value)
-			self._lens[i] = chunkSize
+			chunks[i] = table.create(chunkSize, value)
+			lens[i] = chunkSize
+			dense[i] = filled
 		end
 
 		self._length = size
@@ -130,9 +128,10 @@ end
 	whose chunk does not exist yet.
 ]=]
 function InfArray.Get(self: InfArray, index: number): any?
-	local chunkIndex, pos = locateWithIndex(index)
-	local chunk = self._chunks[chunkIndex]
-	return chunk and chunk[pos]
+	local i = index - 1
+	local chunkIndex = i // LIMIT
+	local chunk = self._chunks[chunkIndex + 1]
+	return chunk and chunk[i - chunkIndex * LIMIT + 1]
 end
 
 
@@ -149,7 +148,12 @@ end
 	[InfArray.new] with a size, or [InfArray:SetChunk] to grow the array first.
 ]=]
 function InfArray.Set(self: InfArray, index: number, value: any?): boolean
-	local chunkIndex, pos = locateWithIndex(index)
+	local i = index - 1
+	local chunkIndex = i // LIMIT
+	local base = chunkIndex * LIMIT
+	local pos = i - base + 1
+	chunkIndex += 1
+
 	local chunk = self._chunks[chunkIndex]
 	if not chunk then return false end
 
@@ -162,14 +166,23 @@ function InfArray.Set(self: InfArray, index: number, value: any?): boolean
 		end
 	elseif value == nil then
 		self._count -= 1
+		self._dense[chunkIndex] = false
 	end
 
-	if value ~= nil and pos > self._lens[chunkIndex] then
-		self._lens[chunkIndex] = pos
+	if value ~= nil then
+		local lens = self._lens
+		local len = lens[chunkIndex]
+		if pos > len then
+			lens[chunkIndex] = pos
 
-		local logical = (chunkIndex - 1) * LIMIT + pos
-		if logical > self._length then
-			self._length = logical
+			if pos > len + 1 then
+				self._dense[chunkIndex] = false
+			end
+
+			local logical = base + pos
+			if logical > self._length then
+				self._length = logical
+			end
 		end
 	end
 
@@ -204,27 +217,38 @@ end
 	Prefer this over per-element writes for bulk population.
 ]=]
 function InfArray.SetChunk(self: InfArray, chunkIndex: number, value: Chunk, len: number?)
+	local dense = self._dense
 	local oldChunk = self._chunks[chunkIndex]
 	if oldChunk then
 		local oldLen = self._lens[chunkIndex]
-		for i = 1, oldLen do
-			if oldChunk[i] ~= nil then
-				self._count -= 1
+		if dense[chunkIndex] then
+			self._count -= oldLen
+		else
+			for i = 1, oldLen do
+				if oldChunk[i] ~= nil then
+					self._count -= 1
+				end
 			end
 		end
 	end
 
 	local newLen = len or #value
+	local newCount = 0
 	for i = 1, newLen do
 		if value[i] ~= nil then
-			self._count += 1
+			newCount += 1
 		end
 	end
 
+	local base = (chunkIndex - 1) * LIMIT
+	self._count += newCount
+	-- Shrinking a chunk that the logical length still reaches into leaves holes.
+	local covered = self._length
+	dense[chunkIndex] = newCount == newLen and (covered <= base + newLen or covered > base + LIMIT)
 	self._lens[chunkIndex] = newLen
 	self._chunks[chunkIndex] = value
 
-	local logical = (chunkIndex - 1) * LIMIT + newLen
+	local logical = base + newLen
 	if logical > self._length then
 		self._length = logical
 	end
@@ -242,8 +266,9 @@ end
 	for hot loops that want to read/write a slot without recomputing the location.
 ]=]
 function InfArray.GetChunkAndPosition(self: InfArray, index: number): (Chunk?, number)
-	local chunkIndex, pos = locateWithIndex(index)
-	return self._chunks[chunkIndex], pos
+	local i = index - 1
+	local chunkIndex = i // LIMIT
+	return self._chunks[chunkIndex + 1], i - chunkIndex * LIMIT + 1
 end
 
 
@@ -258,13 +283,17 @@ end
 ]=]
 function InfArray.PushBack(self: InfArray, value: any): number
 	local index = self._length + 1
-	local chunkIndex, pos = locateWithIndex(index)
+	local i = index - 1
+	local chunkIndex = i // LIMIT
+	local pos = i - chunkIndex * LIMIT + 1
+	chunkIndex += 1
 
-	local chunk = self._chunks[chunkIndex]
+	local chunks = self._chunks
+	local chunk = chunks[chunkIndex]
 	if not chunk then
 		chunk = table.create(APPEND_PREALLOC)
-		self._chunks[chunkIndex] = chunk
-		self._lens[chunkIndex] = 0
+		chunks[chunkIndex] = chunk
+		self._dense[chunkIndex] = true
 	end
 
 	chunk[pos] = value
@@ -284,13 +313,18 @@ end
 	hole — [InfArray:Length] is **unchanged** and later elements are not shifted.
 ]=]
 function InfArray.RemoveIndex(self: InfArray, index: number)
-	local chunkIndex, pos = locateWithIndex(index)
+	local i = index - 1
+	local chunkIndex = i // LIMIT
+	local pos = i - chunkIndex * LIMIT + 1
+	chunkIndex += 1
+
 	local chunk = self._chunks[chunkIndex]
 	if not chunk then return end
 
 	if chunk[pos] ~= nil then
 		chunk[pos] = nil
 		self._count -= 1
+		self._dense[chunkIndex] = false
 	end
 end
 
@@ -346,18 +380,26 @@ end
 	[InfArray:IterateChunks] instead.
 ]=]
 function InfArray.Iterate(self: InfArray, callback: (index: number, value: any) -> boolean?)
-	local chunks, lens = self._chunks, self._lens
+	local chunks, lens, dense = self._chunks, self._lens, self._dense
 
 	for i = 1, #chunks do
 		local chunk = chunks[i]
 		local len = lens[i]
-
 		local base = (i - 1) * LIMIT
-		for j = 1, len do
-			local value = chunk[j]
-			if value ~= nil then
-				if callback(base + j, value) then
+
+		if dense[i] then
+			for j = 1, len do
+				if callback(base + j, chunk[j]) then
 					return
+				end
+			end
+		else
+			for j = 1, len do
+				local value = chunk[j]
+				if value ~= nil then
+					if callback(base + j, value) then
+						return
+					end
 				end
 			end
 		end
@@ -395,15 +437,23 @@ end
 	holes never cut the search short.
 ]=]
 function InfArray.Find(self: InfArray, needle: any): number?
-	local chunks, lens = self._chunks, self._lens
+	local chunks, lens, dense = self._chunks, self._lens, self._dense
 
 	for i = 1, #chunks do
 		local chunk = chunks[i]
 		-- Scan to the tracked length so holes don't cut the search short.
 		local len = lens[i]
-		for j = 1, len do
-			if chunk[j] == needle then
-				return (i - 1) * LIMIT + j
+
+		if dense[i] and needle ~= nil then
+			local hit = table.find(chunk, needle)
+			if hit and hit <= len then
+				return (i - 1) * LIMIT + hit
+			end
+		else
+			for j = 1, len do
+				if chunk[j] == needle then
+					return (i - 1) * LIMIT + j
+				end
 			end
 		end
 	end
@@ -431,17 +481,20 @@ function InfArray.Transform(
 	step: number,
 	updateFunc: (index: number, value: any) -> any
 )
-	local chunks = self._chunks
+	local chunks, dense = self._chunks, self._dense
 
 	local index = start
 	while index <= stop do
-		local chunkIndex = locateWithIndex(index)
-		local chunk = chunks[chunkIndex]
-		local chunkEnd = chunkIndex * LIMIT
+		local chunkIndex = (index - 1) // LIMIT
+		local base = chunkIndex * LIMIT
+		local chunkEnd = base + LIMIT
+		chunkIndex += 1
 
+		local chunk = chunks[chunkIndex]
 		if chunk then
-			local base = (chunkIndex - 1) * LIMIT
 			local limit = math.min(chunkEnd, stop)
+			local delta = 0
+			local holed = false
 			for i = index, limit, step do
 				local pos = i - base
 				local old = chunk[pos]
@@ -450,11 +503,20 @@ function InfArray.Transform(
 
 				if old == nil then
 					if new ~= nil then
-						self._count += 1
+						delta += 1
 					end
 				elseif new == nil then
-					self._count -= 1
+					delta -= 1
+					holed = true
 				end
+			end
+
+			if delta ~= 0 then
+				self._count += delta
+			end
+
+			if holed then
+				dense[chunkIndex] = false
 			end
 		end
 
