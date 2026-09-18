@@ -63,11 +63,42 @@ The instance keeps five fields:
 | ---------- | ------------------------------------------------------------- |
 | `_chunks`  | Array of backing tables; each holds up to `LIMIT` elements.   |
 | `_lens`    | Per-chunk logical length (holes included).                    |
-| `_dense`   | Per chunk: whether it is known to be hole-free up to its length. |
+| `_holes`   | Per-chunk count of tombstoned slots below that length.        |
 | `_length`  | Logical span of the whole array — the highest assigned index. |
 | `_count`   | Number of present (non-`nil`) elements.                       |
 
-Because removals leave `nil` holes, the code **never** relies on `#chunk` (which is undefined once a table has holes). Every length is tracked explicitly.
+### Holes are tombstones, not `nil`
+
+Clearing a slot stores a private `EMPTY` sentinel rather than `nil`. A chunk is
+therefore never a holey Luau table, whatever sequence of removals it has been
+through:
+
+* `Find` is always a single `table.find` fastcall. A `nil` would end that scan
+  early, so with real holes it would have to fall back to an interpreted loop —
+  measured at **2.5× slower** with as little as one hole in the chunk.
+* Slots never migrate into the table's hash part, so random access stays on the
+  array fast path and pre-sizing is never wasted.
+
+Lengths are still tracked explicitly in `_lens` rather than read from `#chunk`,
+since a chunk is padded past its logical length.
+
+#### When to use `EMPTY` and when to use `nil`
+
+The sentinel is exported as `InfArray.EMPTY`. **Use it only when you index a
+chunk table yourself. Everywhere else use `nil`.**
+
+| Doing | Use |
+| ----- | --- |
+| `Set(i, nil)`, `PushBack(nil)`, `Transform` returning nil | `nil` |
+| A table with gaps passed to `SetChunk` | `nil`, rewritten for you |
+| Reading `Get(i)` | `nil` |
+| `Transform` callback's value argument | `nil` |
+| `Iterate` or `for .. in` value | neither, holes are skipped |
+| `chunk[j]` from a raw chunk | `EMPTY` |
+
+Three functions hand back a raw chunk: `GetChunk`, `GetChunkAndPosition` and
+`IterateChunks`. Never call them and you never meet `EMPTY`. Inside a chunk's
+tracked length a slot is a value or `EMPTY`, never `nil`.
 
 ### Two lengths
 
@@ -91,20 +122,21 @@ InfArray resolves this with a **two-tier API**:
   `Transform`. 
 * **Raw tier** — `GetChunk`, `SetChunk`, `IterateChunks`, `GetChunkAndPosition`.
   They are the fastest path for bulk work, but **you** are responsible for
-  nil-checking and respecting per-chunk lengths. Read freely; clearing a slot in
-  a raw chunk yourself desyncs the hole tracking `Find` and `Iterate` rely on.
-  Use `RemoveIndex` or `Set` for that. See
-  [Lengths & Holes](docs/lengths-and-holes.md).
+  skipping tombstones and respecting per-chunk lengths. Read freely; clearing a
+  slot in a raw chunk yourself desyncs the hole count. Use `RemoveIndex` or
+  `Set` for that. See [Lengths & Holes](docs/lengths-and-holes.md).
 
 ```lua
 -- Safe: pays a callback + hole-skip per element
 arr:Iterate(function(index, value) ... end)
 
--- Raw: fastest bulk throughput; you nil-check chunk[j] yourself
+-- Raw: fastest bulk throughput; you skip holes yourself
+local EMPTY = InfArray.EMPTY
+
 arr:IterateChunks(function(chunk, base, len)
     for j = 1, len do
         local v = chunk[j]
-        if v ~= nil then
+        if v ~= EMPTY then
             -- global index is base + j
         end
     end
@@ -125,12 +157,12 @@ where the per-element overhead actually shows up in a profile.
 | `Get`                  | Value at a global index (`nil` if absent or out of range).                                      | `index: number`                                                         | `any?`                        | `O(1)`      |
 | `Set`                  | Overwrite an index inside an existing chunk. Does **not** allocate past the end — use `PushBack` to grow. Returns whether the write happened. | `index: number, value: any?`                                  | `boolean` (`true` if written, `false` if no-op) | `O(1)`      |
 | `PushBack`             | Append a value to the end.                                                                     | `value: any`                                                            | `index: number` (where it landed) | `O(1)`  |
-| `RemoveIndex`          | Clear an index, leaving a `nil` hole (does not shift; `Length` unchanged).                     | `index: number`                                                         | `nil`                         | `O(1)`      |
+| `RemoveIndex`          | Clear an index, leaving a hole (does not shift; `Length` unchanged).                           | `index: number`                                                         | `nil`                         | `O(1)`      |
 | `Count`                | Number of present (non-`nil`) elements.                                                        | —                                                                       | `number`                      | `O(1)`      |
 | `Length`               | Logical span: highest assigned index, holes included.                                         | —                                                                       | `number`                      | `O(1)`      |
 | `Find`                 | First global index whose value equals `needle`.                                               | `needle: any`                                                           | `number?`                     | `O(n)`      |
 | `Iterate`              | Visit present elements in order; return `true` from the callback to stop.                      | `callback: (index: number, value: any) -> boolean?`                    | `nil`                         | `O(n)`      |
-| `IterateChunks`        | Hand raw chunks to the caller for bulk work; caller nil-checks. Return `true` to stop.         | `callback: (chunk: { any }, base: number, len: number) -> boolean?`    | `nil`                         | `O(chunks)` |
+| `IterateChunks`        | Hand raw chunks to the caller for bulk work; caller skips `EMPTY`. Return `true` to stop.      | `callback: (chunk: { any }, base: number, len: number) -> boolean?`    | `nil`                         | `O(chunks)` |
 | `Transform`            | Apply `updateFunc` over `[start, stop]` by `step`; maintains `Count`.                          | `start, stop, step: number, updateFunc: (index: number, value: any) -> any` | `nil`                    | `O(range)`  |
 | `GetChunk`             | The backing chunk table at a chunk index.                                                      | `chunkIndex: number`                                                    | `{ any }?`                    | `O(1)`      |
 | `SetChunk`             | Replace a whole chunk; pass `len` for sparse data (defaults to `#value`).                      | `chunkIndex: number, value: { any }, len: number?`                     | `nil`                         | `O(chunk)`  |
@@ -143,6 +175,8 @@ The array also supports `#arr` (via `__len`, equals `Length()`) and
 Also exported:
 
 * `InfArray.LIMIT` — elements per chunk (`2^26`).
+* `InfArray.EMPTY` — the tombstone stored in a cleared slot. Compare against it
+  when reading a raw chunk. `Get` never returns it.
 
 ###### *n is the number of elements.*
 
@@ -249,7 +283,7 @@ lute test
   contiguous integer indices. There is no hashed-key storage.
 * **Slower per element than a native table.** Every access pays an extra chunk lookup. Use InfArray when you need capacity past `2^26`, not for small arrays that already fit.
 * **`Set` does not allocate new chunks.** It writes only inside a chunk that already exists, returning `true` when the write lands and `false` (a no-op) when the target index maps to an unallocated chunk. Within an existing chunk it *can* fill a hole past the current `Length()` and extend it; it just won't create the next chunk — use `PushBack`, `new(size)` or `SetChunk` for that.
-* **Removals leave holes.** `RemoveIndex` does not shift elements. The slot becomes `nil`. This keeps removal `O(1)`.
+* **Removals leave holes.** `RemoveIndex` does not shift elements. The slot reads back as `nil` and is skipped by iteration; internally it holds the `InfArray.EMPTY` tombstone. This keeps removal `O(1)`.
 * **Large pre-allocation is slow.** Initializing beyond `2^24` elements via
   `new(size, value)` may be significantly slower. This is due to Luau's `table.create` function taking longer for initializing larger counts (with `table.create(2^26)` taking ~0.5s).
 

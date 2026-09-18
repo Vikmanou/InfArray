@@ -20,18 +20,23 @@ default.
 [`GetChunk`](/api/InfArray#GetChunk), [`SetChunk`](/api/InfArray#SetChunk),
 [`IterateChunks`](/api/InfArray#IterateChunks),
 [`GetChunkAndPosition`](/api/InfArray#GetChunkAndPosition). These are the fastest
-path for bulk work, but **you** are responsible for nil-checking and respecting
-per-chunk lengths.
+path for bulk work, but **you** are responsible for skipping tombstoned holes and
+respecting per-chunk lengths.
+
+These three are the only places `InfArray.EMPTY` applies. Index a chunk table
+yourself and a hole reads as `EMPTY`; everywhere else in the API a hole is `nil`.
+See [Lengths & Holes](./lengths-and-holes).
 
 ```lua
 -- Safe: pays a callback + hole-skip per element
 arr:Iterate(function(index, value) end)
 
--- Raw: fastest bulk throughput; you nil-check chunk[j] yourself
+local EMPTY = InfArray.EMPTY
+
 arr:IterateChunks(function(chunk, base, len)
     for j = 1, len do
         local v = chunk[j]
-        if v ~= nil then
+        if v ~= EMPTY then
             -- global index is base + j
         end
     end

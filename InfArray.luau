@@ -4,14 +4,16 @@
 --[[
 
     InfArray.luau
-    Viken (@Syveric on Roblox) 
+    Viken (@Syveric on Roblox)
 
     Bypass Luau's internal table size limit of 2^26
     by chunking values into segments. Indices use integer math, so
     the array is valid up to 2^53, the largest exact integer a Luau number holds.
 
-    Removals leave nil holes, and since per-chunk logical lengths are tracked explicitly,
-    the code never relies on `#` over a chunk (which is undefined once it has holes).
+    A cleared slot stores the private EMPTY tombstone rather than nil, so a chunk
+    is never a holey table. Scans stay on Luau's array fast paths no matter how
+    the array has been mutated: Find is always a single table.find fastcall and
+    a chunk never spills slots into the table's hash part.
 
         Length() -- highest assigned index, holes included.
         Count()  -- number of present (non-nil) elements.
@@ -24,13 +26,15 @@ local LIMIT = 2 ^ LIMIT_BITS -- 67108864 elements per chunk
 
 local APPEND_PREALLOC = math.min(2 ^ 16, LIMIT)
 
+local EMPTY = table.freeze({})
+
 type Chunk = { any }
 
 export type InfArray = typeof(setmetatable(
 	{} :: {
 		_chunks: { Chunk },
 		_lens: { number }, -- length per chunk, holes included
-		_dense: { boolean }, -- per chunk: true only if it is known hole-free up to its length
+		_holes: { number }, -- tombstoned slots per chunk, within its length
 		_length: number, -- length of the whole array, holes included
 		_count: number, -- number of present (non nil) elements
 	},
@@ -47,10 +51,11 @@ export type InfArray = typeof(setmetatable(
 	up to 2^53 elements (the largest exact integer a Luau `number` can represent).
 	Indices are 1-based and resolved with integer math.
 
-	Removals leave `nil` holes. Per-chunk logical lengths are tracked explicitly, so
-	the implementation never relies on `#` over a chunk (which is undefined once the
-	chunk contains holes). [InfArray:Length] reports the highest assigned index
-	(holes included), while [InfArray:Count] reports the number of present elements.
+	Removals leave holes. [InfArray:Length] reports the highest assigned index
+	(holes included), while [InfArray:Count] reports the number of present
+	elements. A hole reads back as `nil` through [InfArray:Get] and is skipped by
+	iteration, but the backing slot holds the [InfArray.EMPTY] tombstone, so raw
+	chunks are dense tables rather than holey ones.
 
 	```lua
 	local InfArray = require(path.to.InfArray)
@@ -66,7 +71,7 @@ export type InfArray = typeof(setmetatable(
 	`get`/`GetValueAtIndex` (Get), `set`/`Replace` (Set), `InsertBack` (PushBack),
 	`TransformRange` (Transform), `GetTotalLen` (Count) and `GetLength` (Length).
 ]=]
-local InfArray = { LIMIT = LIMIT }
+local InfArray = { LIMIT = LIMIT, EMPTY = EMPTY }
 InfArray.__index = InfArray
 
 --[=[
@@ -76,6 +81,31 @@ InfArray.__index = InfArray
 	@tag static
 
 	Maximum number of elements a single chunk can hold (2^26 = 67108864).
+]=]
+
+--[=[
+	@within InfArray
+	@prop EMPTY any
+	@readonly
+	@tag static
+
+	Marks a hole in a raw chunk.
+
+	**Use `EMPTY` only when you index a chunk table yourself. Everywhere else use
+	`nil`.** The three functions that hand back a raw chunk are
+	[InfArray:GetChunk], [InfArray:GetChunkAndPosition] and
+	[InfArray:IterateChunks].
+	
+	| Doing | Use |
+	| --- | --- |
+	| `Set(i, nil)`, `PushBack(nil)`, `Transform` returning nil | `nil` |
+	| A table with gaps passed to [InfArray:SetChunk] | `nil`, rewritten for you |
+	| Reading [InfArray:Get] | `nil` |
+	| [InfArray:Transform] callback's value argument | `nil` |
+	| [InfArray:Iterate] or `for..in` value | neither, holes are skipped |
+	| `chunk[j]` from a raw chunk | `EMPTY` |
+
+	Inside a chunk's tracked length a slot is a value or `EMPTY`, never `nil`.
 ]=]
 
 --[=[
@@ -93,25 +123,26 @@ function InfArray.new(size: number?, value: any?): InfArray
 	local self = setmetatable({
 		_chunks = {},
 		_lens = {},
-		_dense = {},
+		_holes = {},
 		_length = 0,
 		_count = 0
 	}, InfArray)
 
 	if size and size > 0 then
 		local chunkCount = (size - 1) // LIMIT + 1
-		local chunks, lens, dense = self._chunks, self._lens, self._dense
+		local chunks, lens, holes = self._chunks, self._lens, self._holes
 		local filled = value ~= nil
+		local stored = if filled then value else EMPTY
 
 		for i = 1, chunkCount do
 			local chunkSize = if i < chunkCount then LIMIT else size - (chunkCount - 1) * LIMIT
-			chunks[i] = table.create(chunkSize, value)
+			chunks[i] = table.create(chunkSize, stored)
 			lens[i] = chunkSize
-			dense[i] = filled
+			holes[i] = if filled then 0 else chunkSize
 		end
 
 		self._length = size
-		self._count = if value ~= nil then size else 0
+		self._count = if filled then size else 0
 	end
 
 	return self
@@ -131,7 +162,11 @@ function InfArray.Get(self: InfArray, index: number): any?
 	local i = index - 1
 	local chunkIndex = i // LIMIT
 	local chunk = self._chunks[chunkIndex + 1]
-	return chunk and chunk[i - chunkIndex * LIMIT + 1]
+	if chunk == nil then return nil end
+
+	local value = chunk[i - chunkIndex * LIMIT + 1]
+	if value == EMPTY then return nil end
+	return value
 end
 
 
@@ -146,6 +181,9 @@ end
 	Returns `true` when the write lands. This is a **no-op** returning `false` if
 	the index's chunk does not exist yet — use [InfArray:PushBack],
 	[InfArray.new] with a size, or [InfArray:SetChunk] to grow the array first.
+
+	Writing past the chunk's current length extends it and tombstones the skipped
+	slots, which costs O(gap).
 ]=]
 function InfArray.Set(self: InfArray, index: number, value: any?): boolean
 	local i = index - 1
@@ -157,32 +195,47 @@ function InfArray.Set(self: InfArray, index: number, value: any?): boolean
 	local chunk = self._chunks[chunkIndex]
 	if not chunk then return false end
 
+	local holes = self._holes
 	local old = chunk[pos]
-	chunk[pos] = value
-
-	if old == nil then
-		if value ~= nil then
-			self._count += 1
-		end
-	elseif value == nil then
-		self._count -= 1
-		self._dense[chunkIndex] = false
-	end
 
 	if value ~= nil then
 		local lens = self._lens
 		local len = lens[chunkIndex]
-		if pos > len then
-			lens[chunkIndex] = pos
 
-			if pos > len + 1 then
-				self._dense[chunkIndex] = false
+		if pos > len then
+			local carried = 0
+			for j = len + 1, pos - 1 do
+				local slot = chunk[j]
+				if slot == nil then
+					chunk[j] = EMPTY
+				elseif slot ~= EMPTY then
+					carried += 1
+				end
 			end
+
+			holes[chunkIndex] += pos - 1 - len - carried
+			lens[chunkIndex] = pos
 
 			local logical = base + pos
 			if logical > self._length then
 				self._length = logical
 			end
+		end
+
+		chunk[pos] = value
+
+		if old == EMPTY then
+			holes[chunkIndex] -= 1
+			self._count += 1
+		elseif old == nil then
+			self._count += 1
+		end
+	else
+		chunk[pos] = EMPTY
+
+		if old ~= nil and old ~= EMPTY then
+			self._count -= 1
+			holes[chunkIndex] += 1
 		end
 	end
 
@@ -196,9 +249,10 @@ end
 	@param index number -- 1-based chunk index.
 	@return {any}? -- The raw backing table for that chunk, or `nil`.
 
-	Returns the raw chunk table by chunk index. The returned table may contain
-	`nil` holes and is not length-safe under `#`; pair it with the chunk's tracked
-	length (see [InfArray:IterateChunks]) when scanning it.
+	Returns the raw chunk table by chunk index. Cleared slots hold
+	[InfArray.EMPTY], not `nil`, and the table is padded past its logical length;
+	pair it with the chunk's tracked length (see [InfArray:IterateChunks]) when
+	scanning it.
 ]=]
 function InfArray.GetChunk(self: InfArray, index: number): Chunk?
 	return self._chunks[index]
@@ -215,37 +269,43 @@ end
 	Replaces an entire chunk in one call, recomputing [InfArray:Count] for the
 	swapped range and extending [InfArray:Length] if the new chunk reaches further.
 	Prefer this over per-element writes for bulk population.
+
+	Takes ownership of `value`: any `nil` below the chunk's length is rewritten in
+	place as an [InfArray.EMPTY] tombstone.
 ]=]
 function InfArray.SetChunk(self: InfArray, chunkIndex: number, value: Chunk, len: number?)
-	local dense = self._dense
-	local oldChunk = self._chunks[chunkIndex]
-	if oldChunk then
-		local oldLen = self._lens[chunkIndex]
-		if dense[chunkIndex] then
-			self._count -= oldLen
-		else
-			for i = 1, oldLen do
-				if oldChunk[i] ~= nil then
-					self._count -= 1
-				end
-			end
-		end
+	local lens, holes = self._lens, self._holes
+	local base = (chunkIndex - 1) * LIMIT
+
+	local oldLen = lens[chunkIndex]
+	if oldLen then
+		self._count -= oldLen - holes[chunkIndex]
 	end
 
 	local newLen = len or #value
-	local newCount = 0
+
+	local covered = self._length - base
+	if covered > LIMIT then
+		covered = LIMIT
+	end
+	if covered > newLen then
+		newLen = covered
+	end
+
+	local newHoles = 0
 	for i = 1, newLen do
-		if value[i] ~= nil then
-			newCount += 1
+		local slot = value[i]
+		if slot == nil then
+			value[i] = EMPTY
+			newHoles += 1
+		elseif slot == EMPTY then
+			newHoles += 1
 		end
 	end
 
-	local base = (chunkIndex - 1) * LIMIT
-	self._count += newCount
-	-- Shrinking a chunk that the logical length still reaches into leaves holes.
-	local covered = self._length
-	dense[chunkIndex] = newCount == newLen and (covered <= base + newLen or covered > base + LIMIT)
-	self._lens[chunkIndex] = newLen
+	self._count += newLen - newHoles
+	holes[chunkIndex] = newHoles
+	lens[chunkIndex] = newLen
 	self._chunks[chunkIndex] = value
 
 	local logical = base + newLen
@@ -279,7 +339,8 @@ end
 	@return number -- The global index the value was written to.
 
 	Appends `value` after the highest assigned index, allocating a new chunk when
-	the current one fills up. Amortised O(1).
+	the current one fills up. Amortised O(1). Appending `nil` extends
+	[InfArray:Length] with a hole and leaves [InfArray:Count] unchanged.
 ]=]
 function InfArray.PushBack(self: InfArray, value: any): number
 	local index = self._length + 1
@@ -293,13 +354,19 @@ function InfArray.PushBack(self: InfArray, value: any): number
 	if not chunk then
 		chunk = table.create(APPEND_PREALLOC)
 		chunks[chunkIndex] = chunk
-		self._dense[chunkIndex] = true
+		self._holes[chunkIndex] = 0
+	end
+
+	if value == nil then
+		value = EMPTY
+		self._holes[chunkIndex] += 1
+	else
+		self._count += 1
 	end
 
 	chunk[pos] = value
 	self._lens[chunkIndex] = pos
 	self._length = index
-	self._count += 1
 
 	return index
 end
@@ -309,8 +376,8 @@ end
 	@method RemoveIndex
 	@param index number -- 1-based global index to clear.
 
-	Clears the value at `index`, decrementing [InfArray:Count]. This leaves a `nil`
-	hole — [InfArray:Length] is **unchanged** and later elements are not shifted.
+	Clears the value at `index`, decrementing [InfArray:Count]. This leaves a hole.
+	[InfArray:Length] is **unchanged** and later elements are not shifted.
 ]=]
 function InfArray.RemoveIndex(self: InfArray, index: number)
 	local i = index - 1
@@ -321,10 +388,14 @@ function InfArray.RemoveIndex(self: InfArray, index: number)
 	local chunk = self._chunks[chunkIndex]
 	if not chunk then return end
 
-	if chunk[pos] ~= nil then
-		chunk[pos] = nil
+	local old = chunk[pos]
+	if old ~= nil and old ~= EMPTY then
+		chunk[pos] = EMPTY
 		self._count -= 1
-		self._dense[chunkIndex] = false
+
+		if pos <= self._lens[chunkIndex] then
+			self._holes[chunkIndex] += 1
+		end
 	end
 end
 
@@ -363,7 +434,7 @@ function InfArray.__iter(self: InfArray): () -> (number?, any)
 			end
 
 			local value = currentChunk[pos]
-			if value ~= nil then
+			if value ~= EMPTY then
 				return base + pos, value
 			end
 		end
@@ -380,14 +451,14 @@ end
 	[InfArray:IterateChunks] instead.
 ]=]
 function InfArray.Iterate(self: InfArray, callback: (index: number, value: any) -> boolean?)
-	local chunks, lens, dense = self._chunks, self._lens, self._dense
+	local chunks, lens, holes = self._chunks, self._lens, self._holes
 
 	for i = 1, #chunks do
 		local chunk = chunks[i]
 		local len = lens[i]
 		local base = (i - 1) * LIMIT
 
-		if dense[i] then
+		if holes[i] == 0 then
 			for j = 1, len do
 				if callback(base + j, chunk[j]) then
 					return
@@ -396,7 +467,7 @@ function InfArray.Iterate(self: InfArray, callback: (index: number, value: any) 
 		else
 			for j = 1, len do
 				local value = chunk[j]
-				if value ~= nil then
+				if value ~= EMPTY then
 					if callback(base + j, value) then
 						return
 					end
@@ -413,8 +484,8 @@ end
 
 	Hands each raw chunk to `callback` along with its `base` global-index offset and
 	tracked `len`. The fastest way to process the whole array in bulk. The caller
-	**must** nil-check `chunk[j]` itself, since chunks may contain holes. Return
-	`true` to stop early.
+	**must** skip slots equal to [InfArray.EMPTY] itself, since chunks tombstone
+	their holes. Return `true` to stop early.
 ]=]
 function InfArray.IterateChunks(self: InfArray, callback: (chunk: Chunk, base: number, len: number) -> boolean?)
 	local chunks, lens = self._chunks, self._lens
@@ -433,28 +504,19 @@ end
 	@return number? -- The first global index equal to `needle`, or `nil`.
 
 	Linearly scans in ascending order and returns the first global index whose value
-	equals `needle`, or `nil` if not found. Scans to each chunk's tracked length so
-	holes never cut the search short.
+	equals `needle`, or `nil` if not found. Holes never cut the search short, and
+	searching for `nil` always returns `nil`. Pass [InfArray.EMPTY] to locate the
+	first hole.
 ]=]
 function InfArray.Find(self: InfArray, needle: any): number?
-	local chunks, lens, dense = self._chunks, self._lens, self._dense
+	if needle == nil then return nil end
+
+	local chunks, lens = self._chunks, self._lens
 
 	for i = 1, #chunks do
-		local chunk = chunks[i]
-		-- Scan to the tracked length so holes don't cut the search short.
-		local len = lens[i]
-
-		if dense[i] and needle ~= nil then
-			local hit = table.find(chunk, needle)
-			if hit and hit <= len then
-				return (i - 1) * LIMIT + hit
-			end
-		else
-			for j = 1, len do
-				if chunk[j] == needle then
-					return (i - 1) * LIMIT + j
-				end
-			end
+		local hit = table.find(chunks[i], needle)
+		if hit and hit <= lens[i] then
+			return (i - 1) * LIMIT + hit
 		end
 	end
 
@@ -470,9 +532,9 @@ end
 	@param updateFunc (index: number, value: any) -> any -- Returns the new value for each visited slot.
 
 	Applies `updateFunc` over the range `[start, stop]` by `step`, writing back each
-	returned value. May turn holes into values (or values back into holes);
-	[InfArray:Count] stays correct either way. Indices whose chunk does not exist
-	are skipped.
+	returned value. `updateFunc` sees `nil` for a hole and may return `nil` to clear
+	a slot; [InfArray:Count] stays correct either way. Indices whose chunk does not
+	exist are skipped.
 ]=]
 function InfArray.Transform(
 	self: InfArray,
@@ -481,7 +543,7 @@ function InfArray.Transform(
 	step: number,
 	updateFunc: (index: number, value: any) -> any
 )
-	local chunks, dense = self._chunks, self._dense
+	local chunks, holes = self._chunks, self._holes
 
 	local index = start
 	while index <= stop do
@@ -494,20 +556,29 @@ function InfArray.Transform(
 		if chunk then
 			local limit = math.min(chunkEnd, stop)
 			local delta = 0
-			local holed = false
+			local holeDelta = 0
+
 			for i = index, limit, step do
 				local pos = i - base
-				local old = chunk[pos]
-				local new = updateFunc(i, old)
-				chunk[pos] = new
+				local raw = chunk[pos]
+				local new = updateFunc(i, if raw ~= EMPTY then raw else nil)
 
-				if old == nil then
-					if new ~= nil then
+				if new ~= nil then
+					chunk[pos] = new
+
+					if raw == EMPTY then
+						delta += 1
+						holeDelta -= 1
+					elseif raw == nil then
 						delta += 1
 					end
-				elseif new == nil then
-					delta -= 1
-					holed = true
+				else
+					chunk[pos] = EMPTY
+
+					if raw ~= nil and raw ~= EMPTY then
+						delta -= 1
+						holeDelta += 1
+					end
 				end
 			end
 
@@ -515,8 +586,8 @@ function InfArray.Transform(
 				self._count += delta
 			end
 
-			if holed then
-				dense[chunkIndex] = false
+			if holeDelta ~= 0 then
+				holes[chunkIndex] += holeDelta
 			end
 		end
 
