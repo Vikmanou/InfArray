@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">InfArray</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://vikmanou.github.io/InfArray/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="InfArray"><link data-rh="true" rel="canonical" href="https://vikmanou.github.io/InfArray/"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/" hreflang="en"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/" hreflang="x-default"><script data-rh="true">function insertBanner(){var n=document.createElement("div");n.id="__docusaurus-base-url-issue-banner-container";n.innerHTML='\n<div id="__docusaurus-base-url-issue-banner" style="border: thick solid red; background-color: rgb(255, 230, 179); margin: 20px; padding: 20px; font-size: 20px;">\n   <p style="font-weight: bold; font-size: 30px;">Your Docusaurus site did not load properly.</p>\n   <p>A very common reason is a wrong site <a href="https://docusaurus.io/docs/docusaurus.config.js/#baseUrl" style="font-weight: bold;">baseUrl configuration</a>.</p>\n   <p>Current configured baseUrl = <span style="font-weight: bold; color: red;">/InfArray/</span> </p>\n   <p>We suggest trying baseUrl = <span id="__docusaurus-base-url-issue-banner-suggestion-container" style="font-weight: bold; color: green;"></span></p>\n</div>\n',document.body.prepend(n);var e=document.getElementById("__docusaurus-base-url-issue-banner-suggestion-container"),s=window.location.pathname,o="/"===s.substr(-1)?s:s+"/";e.innerHTML=o}document.addEventListener("DOMContentLoaded",(function(){void 0===window.docusaurus&&insertBanner()}))</script><link rel="stylesheet" href="/InfArray/assets/css/styles.9632da8c.css">
-<script src="/InfArray/assets/js/runtime~main.939098fc.js" defer="defer"></script>
-<script src="/InfArray/assets/js/main.4312e473.js" defer="defer"></script>
+<script src="/InfArray/assets/js/runtime~main.8f37ba47.js" defer="defer"></script>
+<script src="/InfArray/assets/js/main.01b89282.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -40,14 +40,15 @@ the official <a href="https://github.com/luau-lang/luau/blob/master/VM/src/ltabl
 <p>A global 1-based <code>index</code> maps to a chunk and a 1-based position inside it:</p>
 <pre><code class="language-lua">local LIMIT = 2 ^ 26 -- 67,108,864 elements per chunk
 
-local function locate(index)
-    local i = index - 1
-    local chunkIndex = i // LIMIT
-    return chunkIndex + 1, i - chunkIndex * LIMIT + 1
-end
+local i = index - 1
+local chunkIndex = i // LIMIT
+local pos = i - chunkIndex * LIMIT + 1
+chunkIndex += 1
 </code></pre>
-<p>The instance keeps four fields:</p>
-<table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td><code>_chunks</code></td><td>Array of backing tables; each holds up to <code>LIMIT</code> elements.</td></tr><tr><td><code>_lens</code></td><td>Per-chunk logical length (holes included).</td></tr><tr><td><code>_length</code></td><td>Logical span of the whole array — the highest assigned index.</td></tr><tr><td><code>_count</code></td><td>Number of present (non-<code>nil</code>) elements.</td></tr></tbody></table>
+<p>That arithmetic is written out at each call site rather than kept in a helper, so
+the hot paths never pay a call.</p>
+<p>The instance keeps five fields:</p>
+<table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td><code>_chunks</code></td><td>Array of backing tables; each holds up to <code>LIMIT</code> elements.</td></tr><tr><td><code>_lens</code></td><td>Per-chunk logical length (holes included).</td></tr><tr><td><code>_dense</code></td><td>Per chunk: whether it is known to be hole-free up to its length.</td></tr><tr><td><code>_length</code></td><td>Logical span of the whole array — the highest assigned index.</td></tr><tr><td><code>_count</code></td><td>Number of present (non-<code>nil</code>) elements.</td></tr></tbody></table>
 <p>Because removals leave <code>nil</code> holes, the code <strong>never</strong> relies on <code>#chunk</code> (which is undefined once a table has holes). Every length is tracked explicitly.</p>
 <h3 id="two-lengths">Two lengths</h3>
 <p>An InfArray tracks two distinct sizes:</p>
@@ -64,9 +65,12 @@ included.</li>
 <ul>
 <li><strong>Safe tier</strong> — <code>Get</code>, <code>Set</code>, <code>PushBack</code>, <code>RemoveIndex</code>, <code>Iterate</code>,
 <code>Transform</code>.</li>
-<li><strong>Raw tier</strong> — <code>GetChunk</code>, <code>SetChunk</code>, <code>IterateChunks</code>, <code>GetChunkAndPosition</code>,  and the exported <code>InfArray.locate</code>.
+<li><strong>Raw tier</strong> — <code>GetChunk</code>, <code>SetChunk</code>, <code>IterateChunks</code>, <code>GetChunkAndPosition</code>.
 They are the fastest path for bulk work, but <strong>you</strong> are responsible for
-nil-checking and respecting per-chunk lengths.</li>
+nil-checking and respecting per-chunk lengths. Read freely; clearing a slot in
+a raw chunk yourself desyncs the hole tracking <code>Find</code> and <code>Iterate</code> rely on.
+Use <code>RemoveIndex</code> or <code>Set</code> for that. See
+<a href="docs/lengths-and-holes.md">Lengths &amp; Holes</a>.</li>
 </ul>
 <pre><code class="language-lua">-- Safe: pays a callback + hole-skip per element
 arr:Iterate(function(index, value) ... end)
@@ -93,7 +97,6 @@ where the per-element overhead actually shows up in a profile.</p>
 <p>Also exported:</p>
 <ul>
 <li><code>InfArray.LIMIT</code> — elements per chunk (<code>2^26</code>).</li>
-<li><code>InfArray.locate(index)</code> — maps a global index to <code>chunkIndex, posInChunk</code>.</li>
 </ul>
 <h6 id="n-is-the-number-of-elements"><em>n is the number of elements.</em></h6>
 <h3 id="legacy-names">Legacy names</h3>
