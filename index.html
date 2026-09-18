@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">InfArray</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://vikmanou.github.io/InfArray/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="InfArray"><link data-rh="true" rel="canonical" href="https://vikmanou.github.io/InfArray/"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/" hreflang="en"><link data-rh="true" rel="alternate" href="https://vikmanou.github.io/InfArray/" hreflang="x-default"><script data-rh="true">function insertBanner(){var n=document.createElement("div");n.id="__docusaurus-base-url-issue-banner-container";n.innerHTML='\n<div id="__docusaurus-base-url-issue-banner" style="border: thick solid red; background-color: rgb(255, 230, 179); margin: 20px; padding: 20px; font-size: 20px;">\n   <p style="font-weight: bold; font-size: 30px;">Your Docusaurus site did not load properly.</p>\n   <p>A very common reason is a wrong site <a href="https://docusaurus.io/docs/docusaurus.config.js/#baseUrl" style="font-weight: bold;">baseUrl configuration</a>.</p>\n   <p>Current configured baseUrl = <span style="font-weight: bold; color: red;">/InfArray/</span> </p>\n   <p>We suggest trying baseUrl = <span id="__docusaurus-base-url-issue-banner-suggestion-container" style="font-weight: bold; color: green;"></span></p>\n</div>\n',document.body.prepend(n);var e=document.getElementById("__docusaurus-base-url-issue-banner-suggestion-container"),s=window.location.pathname,o="/"===s.substr(-1)?s:s+"/";e.innerHTML=o}document.addEventListener("DOMContentLoaded",(function(){void 0===window.docusaurus&&insertBanner()}))</script><link rel="stylesheet" href="/InfArray/assets/css/styles.9632da8c.css">
-<script src="/InfArray/assets/js/runtime~main.8f37ba47.js" defer="defer"></script>
-<script src="/InfArray/assets/js/main.01b89282.js" defer="defer"></script>
+<script src="/InfArray/assets/js/runtime~main.664d934c.js" defer="defer"></script>
+<script src="/InfArray/assets/js/main.94552258.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -48,8 +48,27 @@ chunkIndex += 1
 <p>That arithmetic is written out at each call site rather than kept in a helper, so
 the hot paths never pay a call.</p>
 <p>The instance keeps five fields:</p>
-<table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td><code>_chunks</code></td><td>Array of backing tables; each holds up to <code>LIMIT</code> elements.</td></tr><tr><td><code>_lens</code></td><td>Per-chunk logical length (holes included).</td></tr><tr><td><code>_dense</code></td><td>Per chunk: whether it is known to be hole-free up to its length.</td></tr><tr><td><code>_length</code></td><td>Logical span of the whole array — the highest assigned index.</td></tr><tr><td><code>_count</code></td><td>Number of present (non-<code>nil</code>) elements.</td></tr></tbody></table>
-<p>Because removals leave <code>nil</code> holes, the code <strong>never</strong> relies on <code>#chunk</code> (which is undefined once a table has holes). Every length is tracked explicitly.</p>
+<table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td><code>_chunks</code></td><td>Array of backing tables; each holds up to <code>LIMIT</code> elements.</td></tr><tr><td><code>_lens</code></td><td>Per-chunk logical length (holes included).</td></tr><tr><td><code>_holes</code></td><td>Per-chunk count of tombstoned slots below that length.</td></tr><tr><td><code>_length</code></td><td>Logical span of the whole array — the highest assigned index.</td></tr><tr><td><code>_count</code></td><td>Number of present (non-<code>nil</code>) elements.</td></tr></tbody></table>
+<h3 id="holes-are-tombstones-not-nil">Holes are tombstones, not <code>nil</code></h3>
+<p>Clearing a slot stores a private <code>EMPTY</code> sentinel rather than <code>nil</code>. A chunk is
+therefore never a holey Luau table, whatever sequence of removals it has been
+through:</p>
+<ul>
+<li><code>Find</code> is always a single <code>table.find</code> fastcall. A <code>nil</code> would end that scan
+early, so with real holes it would have to fall back to an interpreted loop —
+measured at <strong>2.5× slower</strong> with as little as one hole in the chunk.</li>
+<li>Slots never migrate into the table&#x27;s hash part, so random access stays on the
+array fast path and pre-sizing is never wasted.</li>
+</ul>
+<p>Lengths are still tracked explicitly in <code>_lens</code> rather than read from <code>#chunk</code>,
+since a chunk is padded past its logical length.</p>
+<h4 id="when-to-use-empty-and-when-to-use-nil">When to use <code>EMPTY</code> and when to use <code>nil</code></h4>
+<p>The sentinel is exported as <code>InfArray.EMPTY</code>. <strong>Use it only when you index a
+chunk table yourself. Everywhere else use <code>nil</code>.</strong></p>
+<table><thead><tr><th>Doing</th><th>Use</th></tr></thead><tbody><tr><td><code>Set(i, nil)</code>, <code>PushBack(nil)</code>, <code>Transform</code> returning nil</td><td><code>nil</code></td></tr><tr><td>A table with gaps passed to <code>SetChunk</code></td><td><code>nil</code>, rewritten for you</td></tr><tr><td>Reading <code>Get(i)</code></td><td><code>nil</code></td></tr><tr><td><code>Transform</code> callback&#x27;s value argument</td><td><code>nil</code></td></tr><tr><td><code>Iterate</code> or <code>for .. in</code> value</td><td>neither, holes are skipped</td></tr><tr><td><code>chunk[j]</code> from a raw chunk</td><td><code>EMPTY</code></td></tr></tbody></table>
+<p>Three functions hand back a raw chunk: <code>GetChunk</code>, <code>GetChunkAndPosition</code> and
+<code>IterateChunks</code>. Never call them and you never meet <code>EMPTY</code>. Inside a chunk&#x27;s
+tracked length a slot is a value or <code>EMPTY</code>, never <code>nil</code>.</p>
 <h3 id="two-lengths">Two lengths</h3>
 <p>An InfArray tracks two distinct sizes:</p>
 <ul>
@@ -67,19 +86,20 @@ included.</li>
 <code>Transform</code>.</li>
 <li><strong>Raw tier</strong> — <code>GetChunk</code>, <code>SetChunk</code>, <code>IterateChunks</code>, <code>GetChunkAndPosition</code>.
 They are the fastest path for bulk work, but <strong>you</strong> are responsible for
-nil-checking and respecting per-chunk lengths. Read freely; clearing a slot in
-a raw chunk yourself desyncs the hole tracking <code>Find</code> and <code>Iterate</code> rely on.
-Use <code>RemoveIndex</code> or <code>Set</code> for that. See
-<a href="docs/lengths-and-holes.md">Lengths &amp; Holes</a>.</li>
+skipping tombstones and respecting per-chunk lengths. Read freely; clearing a
+slot in a raw chunk yourself desyncs the hole count. Use <code>RemoveIndex</code> or
+<code>Set</code> for that. See <a href="docs/lengths-and-holes.md">Lengths &amp; Holes</a>.</li>
 </ul>
 <pre><code class="language-lua">-- Safe: pays a callback + hole-skip per element
 arr:Iterate(function(index, value) ... end)
 
--- Raw: fastest bulk throughput; you nil-check chunk[j] yourself
+-- Raw: fastest bulk throughput; you skip holes yourself
+local EMPTY = InfArray.EMPTY
+
 arr:IterateChunks(function(chunk, base, len)
     for j = 1, len do
         local v = chunk[j]
-        if v ~= nil then
+        if v ~= EMPTY then
             -- global index is base + j
         end
     end
@@ -90,13 +110,15 @@ where the per-element overhead actually shows up in a profile.</p>
 <hr>
 <h2 id="api">API</h2>
 <p><code>InfArray.new([size: number], [value: any])</code> creates a new instance. Think of it as <code>table.create</code>. See <a href="#limitations">Limitations</a> for sizes beyond <code>2^24</code>.</p>
-<table><thead><tr><th>Method</th><th>Description</th><th>Argument(s)</th><th>Returns</th><th>Time</th></tr></thead><tbody><tr><td><code>Get</code></td><td>Value at a global index (<code>nil</code> if absent or out of range).</td><td><code>index: number</code></td><td><code>any?</code></td><td><code>O(1)</code></td></tr><tr><td><code>Set</code></td><td>Overwrite an index inside an existing chunk. Does <strong>not</strong> allocate past the end — use <code>PushBack</code> to grow. Returns whether the write happened.</td><td><code>index: number, value: any?</code></td><td><code>boolean</code> (<code>true</code> if written, <code>false</code> if no-op)</td><td><code>O(1)</code></td></tr><tr><td><code>PushBack</code></td><td>Append a value to the end.</td><td><code>value: any</code></td><td><code>index: number</code> (where it landed)</td><td><code>O(1)</code></td></tr><tr><td><code>RemoveIndex</code></td><td>Clear an index, leaving a <code>nil</code> hole (does not shift; <code>Length</code> unchanged).</td><td><code>index: number</code></td><td><code>nil</code></td><td><code>O(1)</code></td></tr><tr><td><code>Count</code></td><td>Number of present (non-<code>nil</code>) elements.</td><td>—</td><td><code>number</code></td><td><code>O(1)</code></td></tr><tr><td><code>Length</code></td><td>Logical span: highest assigned index, holes included.</td><td>—</td><td><code>number</code></td><td><code>O(1)</code></td></tr><tr><td><code>Find</code></td><td>First global index whose value equals <code>needle</code>.</td><td><code>needle: any</code></td><td><code>number?</code></td><td><code>O(n)</code></td></tr><tr><td><code>Iterate</code></td><td>Visit present elements in order; return <code>true</code> from the callback to stop.</td><td><code>callback: (index: number, value: any) -&gt; boolean?</code></td><td><code>nil</code></td><td><code>O(n)</code></td></tr><tr><td><code>IterateChunks</code></td><td>Hand raw chunks to the caller for bulk work; caller nil-checks. Return <code>true</code> to stop.</td><td><code>callback: (chunk: { any }, base: number, len: number) -&gt; boolean?</code></td><td><code>nil</code></td><td><code>O(chunks)</code></td></tr><tr><td><code>Transform</code></td><td>Apply <code>updateFunc</code> over <code>[start, stop]</code> by <code>step</code>; maintains <code>Count</code>.</td><td><code>start, stop, step: number, updateFunc: (index: number, value: any) -&gt; any</code></td><td><code>nil</code></td><td><code>O(range)</code></td></tr><tr><td><code>GetChunk</code></td><td>The backing chunk table at a chunk index.</td><td><code>chunkIndex: number</code></td><td><code>{ any }?</code></td><td><code>O(1)</code></td></tr><tr><td><code>SetChunk</code></td><td>Replace a whole chunk; pass <code>len</code> for sparse data (defaults to <code>#value</code>).</td><td><code>chunkIndex: number, value: { any }, len: number?</code></td><td><code>nil</code></td><td><code>O(chunk)</code></td></tr><tr><td><code>GetChunkAndPosition</code></td><td>The chunk and 1-based local position for a global index.</td><td><code>index: number</code></td><td><code>{ any }?, number</code></td><td><code>O(1)</code></td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Description</th><th>Argument(s)</th><th>Returns</th><th>Time</th></tr></thead><tbody><tr><td><code>Get</code></td><td>Value at a global index (<code>nil</code> if absent or out of range).</td><td><code>index: number</code></td><td><code>any?</code></td><td><code>O(1)</code></td></tr><tr><td><code>Set</code></td><td>Overwrite an index inside an existing chunk. Does <strong>not</strong> allocate past the end — use <code>PushBack</code> to grow. Returns whether the write happened.</td><td><code>index: number, value: any?</code></td><td><code>boolean</code> (<code>true</code> if written, <code>false</code> if no-op)</td><td><code>O(1)</code></td></tr><tr><td><code>PushBack</code></td><td>Append a value to the end.</td><td><code>value: any</code></td><td><code>index: number</code> (where it landed)</td><td><code>O(1)</code></td></tr><tr><td><code>RemoveIndex</code></td><td>Clear an index, leaving a hole (does not shift; <code>Length</code> unchanged).</td><td><code>index: number</code></td><td><code>nil</code></td><td><code>O(1)</code></td></tr><tr><td><code>Count</code></td><td>Number of present (non-<code>nil</code>) elements.</td><td>—</td><td><code>number</code></td><td><code>O(1)</code></td></tr><tr><td><code>Length</code></td><td>Logical span: highest assigned index, holes included.</td><td>—</td><td><code>number</code></td><td><code>O(1)</code></td></tr><tr><td><code>Find</code></td><td>First global index whose value equals <code>needle</code>.</td><td><code>needle: any</code></td><td><code>number?</code></td><td><code>O(n)</code></td></tr><tr><td><code>Iterate</code></td><td>Visit present elements in order; return <code>true</code> from the callback to stop.</td><td><code>callback: (index: number, value: any) -&gt; boolean?</code></td><td><code>nil</code></td><td><code>O(n)</code></td></tr><tr><td><code>IterateChunks</code></td><td>Hand raw chunks to the caller for bulk work; caller skips <code>EMPTY</code>. Return <code>true</code> to stop.</td><td><code>callback: (chunk: { any }, base: number, len: number) -&gt; boolean?</code></td><td><code>nil</code></td><td><code>O(chunks)</code></td></tr><tr><td><code>Transform</code></td><td>Apply <code>updateFunc</code> over <code>[start, stop]</code> by <code>step</code>; maintains <code>Count</code>.</td><td><code>start, stop, step: number, updateFunc: (index: number, value: any) -&gt; any</code></td><td><code>nil</code></td><td><code>O(range)</code></td></tr><tr><td><code>GetChunk</code></td><td>The backing chunk table at a chunk index.</td><td><code>chunkIndex: number</code></td><td><code>{ any }?</code></td><td><code>O(1)</code></td></tr><tr><td><code>SetChunk</code></td><td>Replace a whole chunk; pass <code>len</code> for sparse data (defaults to <code>#value</code>).</td><td><code>chunkIndex: number, value: { any }, len: number?</code></td><td><code>nil</code></td><td><code>O(chunk)</code></td></tr><tr><td><code>GetChunkAndPosition</code></td><td>The chunk and 1-based local position for a global index.</td><td><code>index: number</code></td><td><code>{ any }?, number</code></td><td><code>O(1)</code></td></tr></tbody></table>
 <p>The array also supports <code>#arr</code> (via <code>__len</code>, equals <code>Length()</code>) and
 <code>for index, value in arr</code> (via <code>__iter</code>, skips holes, but prefer
 <code>IterateChunks</code> for bulk throughput).</p>
 <p>Also exported:</p>
 <ul>
 <li><code>InfArray.LIMIT</code> — elements per chunk (<code>2^26</code>).</li>
+<li><code>InfArray.EMPTY</code> — the tombstone stored in a cleared slot. Compare against it
+when reading a raw chunk. <code>Get</code> never returns it.</li>
 </ul>
 <h6 id="n-is-the-number-of-elements"><em>n is the number of elements.</em></h6>
 <h3 id="legacy-names">Legacy names</h3>
@@ -169,7 +191,7 @@ treat as relative ratios):</p>
 contiguous integer indices. There is no hashed-key storage.</li>
 <li><strong>Slower per element than a native table.</strong> Every access pays an extra chunk lookup. Use InfArray when you need capacity past <code>2^26</code>, not for small arrays that already fit.</li>
 <li><strong><code>Set</code> does not allocate new chunks.</strong> It writes only inside a chunk that already exists, returning <code>true</code> when the write lands and <code>false</code> (a no-op) when the target index maps to an unallocated chunk. Within an existing chunk it <em>can</em> fill a hole past the current <code>Length()</code> and extend it; it just won&#x27;t create the next chunk — use <code>PushBack</code>, <code>new(size)</code> or <code>SetChunk</code> for that.</li>
-<li><strong>Removals leave holes.</strong> <code>RemoveIndex</code> does not shift elements. The slot becomes <code>nil</code>. This keeps removal <code>O(1)</code>.</li>
+<li><strong>Removals leave holes.</strong> <code>RemoveIndex</code> does not shift elements. The slot reads back as <code>nil</code> and is skipped by iteration; internally it holds the <code>InfArray.EMPTY</code> tombstone. This keeps removal <code>O(1)</code>.</li>
 <li><strong>Large pre-allocation is slow.</strong> Initializing beyond <code>2^24</code> elements via
 <code>new(size, value)</code> may be significantly slower. This is due to Luau&#x27;s <code>table.create</code> function taking longer for initializing larger counts (with <code>table.create(2^26)</code> taking ~0.5s).</li>
 </ul>
